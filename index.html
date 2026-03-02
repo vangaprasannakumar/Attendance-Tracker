@@ -2,191 +2,23 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Attendance Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Attendance</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#121212">
     <style>
-        :root {
-            --bg-color: #121212;
-            --surface-color: #1e1e1e;
-            --primary-text: #ffffff;
-            --secondary-text: #b3b3b3;
-            --btn-in: #4caf50;
-            --btn-out: #f44336;
-            --btn-perm: #d2b48c;
-            --btn-leave: #ff9999;
-            --input-bg: #2c2c2c;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--primary-text);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-        }
-
-        .container {
-            background-color: var(--surface-color);
-            padding: 30px;
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-            width: 90%;
-            max-width: 400px;
-            text-align: center;
-        }
-
-        h1 {
-            margin-top: 0;
-            font-size: 24px;
-            letter-spacing: 1px;
-            color: var(--primary-text);
-        }
-
-        .time-display {
-            font-size: 32px;
-            font-weight: bold;
-            margin: 20px 0;
-            color: var(--secondary-text);
-        }
-
-        .btn-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        button {
-            border: none;
-            border-radius: 8px;
-            padding: 15px;
-            font-size: 16px;
-            font-weight: bold;
-            color: #121212;
-            cursor: pointer;
-            transition: transform 0.2s, filter 0.2s;
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-            filter: brightness(1.1);
-        }
-
-        button:active {
-            transform: translateY(1px);
-        }
-
-        .btn-in { background-color: var(--btn-in); color: white; }
-        .btn-out { background-color: var(--btn-out); color: white; }
-        .btn-perm { background-color: var(--btn-perm); }
-        .btn-leave { background-color: var(--btn-leave); }
-
-        .full-width {
-            grid-column: span 2;
-        }
-
-        input[type="text"] {
-            width: 100%;
-            padding: 12px;
-            margin-top: 10px;
-            border: 1px solid #444;
-            border-radius: 8px;
-            background-color: var(--input-bg);
-            color: white;
-            box-sizing: border-box;
-            font-size: 14px;
-        }
-
-        input[type="text"]:focus {
-            outline: none;
-            border-color: #888;
-        }
-
-        #status {
-            margin-top: 15px;
-            font-size: 14px;
-            height: 20px;
-            color: #4caf50;
-        }
-        
-        /* Loading animation */
-        .loading {
-            opacity: 0.5;
-            pointer-events: none;
-        }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #121212; }
+        iframe { width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body>
+    <iframe src="https://script.google.com/macros/s/AKfycbzsV8eP3nMkVUva7WwHkDKi820Mv0BEm0kTxxM__EamMerhKdhxQJKtVRA0mSI0_EjK/exec"></iframe>
 
-<div class="container">
-    <h1>Attendance Tracker</h1>
-    <div class="time-display" id="clock">00:00 AM</div>
-    
-    <div class="btn-grid">
-        <button class="btn-in" onclick="markAttendance('in')">Clock In</button>
-        <button class="btn-out" onclick="markAttendance('out')">Clock Out</button>
-        <button class="btn-perm full-width" onclick="markAttendance('permission')">Permission Out</button>
-        <button class="btn-leave full-width" onclick="markAttendance('leave')">Mark Leave</button>
-    </div>
-
-    <input type="text" id="remarks" placeholder="Add remarks (optional)...">
-    <div id="status"></div>
-</div>
-
-<script>
-    // --- REPLACE THIS WITH YOUR GOOGLE APPS SCRIPT WEB APP URL ---
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzsV8eP3nMkVUva7WwHkDKi820Mv0BEm0kTxxM__EamMerhKdhxQJKtVRA0mSI0_EjK/execE'; 
-
-    // Live Clock
-    function updateClock() {
-        const now = new Date();
-        document.getElementById('clock').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-    }
-    setInterval(updateClock, 1000);
-    updateClock();
-
-    async function markAttendance(action) {
-        const remarksInput = document.getElementById('remarks');
-        const statusDiv = document.getElementById('status');
-        const container = document.querySelector('.container');
-        
-        statusDiv.style.color = 'var(--secondary-text)';
-        statusDiv.innerText = 'Updating...';
-        container.classList.add('loading');
-
-        const payload = {
-            action: action,
-            remarks: remarksInput.value,
-            timestamp: new Date().toISOString()
-        };
-
-        try {
-            const response = await fetch(SCRIPT_URL, {
-                method: 'POST',
-                body: JSON.stringify(payload),
-                // no-cors is sometimes needed to avoid preflight issues with Google Scripts 
-                // but requires handling the response blindly if set. 
-                // We use standard fetch here; ensure Apps Script is deployed properly.
-            });
-            
-            statusDiv.style.color = '#4caf50';
-            statusDiv.innerText = 'Successfully updated!';
-            remarksInput.value = ''; // clear remarks after success
-            
-            setTimeout(() => { statusDiv.innerText = ''; }, 3000);
-
-        } catch (error) {
-            statusDiv.style.color = '#f44336';
-            statusDiv.innerText = 'Error saving data. Check connection.';
-            console.error(error);
-        } finally {
-            container.classList.remove('loading');
+    <script>
+        // Register Service Worker to make it installable
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
         }
-    }
-</script>
-
+    </script>
 </body>
 </html>
