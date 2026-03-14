@@ -35,14 +35,11 @@
     <iframe id="app-frame" src="https://script.google.com/macros/s/AKfycbzsV8eP3nMkVUva7WwHkDKi820Mv0BEm0kTxxM__EamMerhKdhxQJKtVRA0mSI0_EjK/exec"></iframe>
 
     <script>
-        // Force cache clear
         if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().then(r => r.forEach(reg => reg.unregister())); }
-        
         const loader = document.getElementById('loader'); const iframe = document.getElementById('app-frame');
         function forceHideLoader() { loader.classList.add('hidden'); setTimeout(() => { loader.style.display = 'none'; }, 500); }
-        
         iframe.onload = forceHideLoader; 
-        setTimeout(forceHideLoader, 2000); // Failsafe loader kill
+        setTimeout(forceHideLoader, 2000); 
     </script>
 </body>
 </html>
