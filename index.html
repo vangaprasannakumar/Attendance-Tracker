@@ -34,18 +34,14 @@
     <iframe id="app-frame" src="https://script.google.com/macros/s/AKfycbzsV8eP3nMkVUva7WwHkDKi820Mv0BEm0kTxxM__EamMerhKdhxQJKtVRA0mSI0_EjK/exec" allow="camera *; microphone *; display-capture *"></iframe>
 
     <script>
-        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(err => console.log('SW bypassed.')); }
-        const loader = document.getElementById('loader'); const iframe = document.getElementById('app-frame');
-        
-        function forceHideLoader() { 
-            loader.style.opacity = '0'; 
-            setTimeout(() => { loader.style.display = 'none'; }, 400); 
+        if ('serviceWorker' in navigator) { 
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) { registration.unregister(); }
+            });
         }
-        
-        // Hide loader when iframe is ready
+        const loader = document.getElementById('loader'); const iframe = document.getElementById('app-frame');
+        function forceHideLoader() { loader.style.opacity = '0'; setTimeout(() => { loader.style.display = 'none'; }, 400); }
         iframe.onload = forceHideLoader; 
-        
-        // AGGRESSIVE KILL SWITCH: Force hide loader after 1.5 seconds NO MATTER WHAT.
         setTimeout(forceHideLoader, 1500);
     </script>
 </body>
