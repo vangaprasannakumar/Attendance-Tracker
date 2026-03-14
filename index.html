@@ -32,18 +32,17 @@
         <h3>SECURE CONNECTION</h3>
     </div>
 
-    <iframe id="app-frame" src="https://script.google.com/macros/s/AKfycbzsV8eP3nMkVUva7WwHkDKi820Mv0BEm0kTxxM__EamMerhKdhxQJKtVRA0mSI0_EjK/exec" allow="camera; microphone; fullscreen; display-capture"></iframe>
+    <iframe id="app-frame" src="https://script.google.com/macros/s/AKfycbzsV8eP3nMkVUva7WwHkDKi820Mv0BEm0kTxxM__EamMerhKdhxQJKtVRA0mSI0_EjK/exec"></iframe>
 
     <script>
-        if ('serviceWorker' in navigator) { 
-            navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                for(let registration of registrations) { registration.unregister(); }
-            });
-        }
+        // Force cache clear
+        if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().then(r => r.forEach(reg => reg.unregister())); }
+        
         const loader = document.getElementById('loader'); const iframe = document.getElementById('app-frame');
-        function forceHideLoader() { loader.classList.add('hidden'); setTimeout(() => { loader.style.display = 'none'; }, 600); }
+        function forceHideLoader() { loader.classList.add('hidden'); setTimeout(() => { loader.style.display = 'none'; }, 500); }
+        
         iframe.onload = forceHideLoader; 
-        setTimeout(forceHideLoader, 1500); // Kills loader if it gets stuck
+        setTimeout(forceHideLoader, 2000); // Failsafe loader kill
     </script>
 </body>
 </html>
