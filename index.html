@@ -2,26 +2,48 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Capco Workforce</title>
     <link rel="icon" type="image/jpeg" href="https://i.postimg.cc/k5YhWmTg/Logo.jpg?v=final">
     <link rel="apple-touch-icon" href="https://i.postimg.cc/k5YhWmTg/Logo.jpg?v=final">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#09090b">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Capco HR">
+
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #09090b; overflow: hidden; }
-        iframe { width: 100%; height: 100%; border: none; position: absolute; top: 0; left: 0; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #09090b; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        iframe { width: 100%; height: 100%; border: none; position: absolute; top: 0; left: 0; z-index: 10; }
+        
+        #loader { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 50; background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.15), transparent 50%), #09090b; color: #f4f4f5; transition: opacity 0.4s ease-out; }
+        #loader img { max-width: 220px; height: auto; margin-bottom: 30px; animation: pulse 2s infinite ease-in-out; }
+        #loader h3 { font-weight: 500; letter-spacing: 1.5px; font-size: 16px; margin: 0; color: #94a3b8; animation: slideUp 0.8s ease-out forwards; opacity: 0; transform: translateY(10px); }
+        
+        @keyframes pulse { 0% { transform: scale(0.98); opacity: 0.85; } 50% { transform: scale(1.02); opacity: 1; } 100% { transform: scale(0.98); opacity: 0.85; } }
+        @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
+        .hidden { opacity: 0; pointer-events: none; }
     </style>
 </head>
 <body>
-    <iframe src="https://script.google.com/macros/s/AKfycbzsV8eP3nMkVUva7WwHkDKi820Mv0BEm0kTxxM__EamMerhKdhxQJKtVRA0mSI0_EjK/exec" allow="camera *; microphone *; display-capture *"></iframe>
+
+    <div id="loader">
+        <img src="https://i.postimg.cc/C1fJDfZC/Capco-Logo.png?v=final" alt="Capco Logo">
+        <h3>SECURE CONNECTION</h3>
+    </div>
+
+    <iframe id="app-frame" src="https://script.google.com/macros/s/AKfycbzsV8eP3nMkVUva7WwHkDKi820Mv0BEm0kTxxM__EamMerhKdhxQJKtVRA0mSI0_EjK/exec" allow="camera; microphone; fullscreen; display-capture"></iframe>
 
     <script>
-        // Force phone to clear old broken cache!
         if ('serviceWorker' in navigator) { 
-            navigator.serviceWorker.getRegistrations().then(function(r) { for(let i of r) i.unregister(); });
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) { registration.unregister(); }
+            });
         }
+        const loader = document.getElementById('loader'); const iframe = document.getElementById('app-frame');
+        function forceHideLoader() { loader.classList.add('hidden'); setTimeout(() => { loader.style.display = 'none'; }, 600); }
+        iframe.onload = forceHideLoader; 
+        setTimeout(forceHideLoader, 1500); // Kills loader if it gets stuck
     </script>
 </body>
 </html>
