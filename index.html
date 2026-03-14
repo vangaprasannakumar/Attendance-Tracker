@@ -32,13 +32,16 @@
         <h3>SECURE CONNECTION</h3>
     </div>
 
-    <iframe id="app-frame" src="https://script.google.com/macros/s/AKfycbzsV8eP3nMkVUva7WwHkDKi820Mv0BEm0kTxxM__EamMerhKdhxQJKtVRA0mSI0_EjK/exec" allow="camera *; microphone *; display-capture *"></iframe>
+    <iframe id="app-frame" src="https://script.google.com/macros/s/AKfycbzsV8eP3nMkVUva7WwHkDKi820Mv0BEm0kTxxM__EamMerhKdhxQJKtVRA0mSI0_EjK/exec" allow="camera; microphone; fullscreen; display-capture"></iframe>
 
     <script>
         if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(err => console.log('SW bypassed.')); }
         const loader = document.getElementById('loader'); const iframe = document.getElementById('app-frame');
         function hideLoader() { loader.classList.add('hidden'); setTimeout(() => { loader.style.display = 'none'; }, 600); }
-        iframe.onload = hideLoader; setTimeout(hideLoader, 4000);
+        iframe.onload = hideLoader; 
+        
+        // Failsafe: Force load the page after 3 seconds even if network is slow
+        setTimeout(hideLoader, 3000);
     </script>
 </body>
 </html>
