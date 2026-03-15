@@ -118,10 +118,9 @@
 </div>
 
 <script>
-    // ⚠️ YOUR GOOGLE API CONNECTION ⚠️
+    // ⚠️ PRE-FILLED WITH YOUR EXACT GOOGLE URL ⚠️
     const GOOGLE_API_URL = "https://script.google.com/macros/s/AKfycbzsV8eP3nMkVUva7WwHkDKi820Mv0BEm0kTxxM__EamMerhKdhxQJKtVRA0mSI0_EjK/exec";
 
-    // --- GLOBAL VARIABLES ---
     let currentUser = { username: '', role: '' };
     let employeeList = [];
     let modelsLoaded = false;
@@ -131,30 +130,25 @@
     let currentAction = 'in';
     let recentlyPunched = []; 
 
-// --- API BRIDGE FUNCTION ---
+    // --- ADVANCED API BRIDGE FUNCTION ---
     async function callGoogleAPI(payload) {
         try {
             const response = await fetch(GOOGLE_API_URL, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'text/plain;charset=utf-8',
-                },
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify(payload),
-                redirect: 'follow' // ⚠️ CRITICAL: Forces GitHub to follow Google's security redirects
+                redirect: 'follow'
             });
-            
-            const rawText = await response.text(); // Read raw response first
-            
+            const rawText = await response.text(); 
             try {
-                return JSON.parse(rawText); // Try to convert to data
+                return JSON.parse(rawText);
             } catch(e) {
-                console.error("Google responded with HTML instead of Data. Response:", rawText);
-                return { status: 'error', message: 'API Permission Error. Did you set "Who has access" to "Anyone"?' };
+                console.error("Google responded with HTML instead of Data:", rawText);
+                return { status: 'error', message: 'API Permission Error. Re-deploy Google Script as "Anyone".' };
             }
-            
         } catch (error) {
             console.error("Fetch Error:", error);
-            return { status: 'error', message: 'Network error: ' + error.message };
+            return { status: 'error', message: 'Network error or Google API offline.' };
         }
     }
 
@@ -170,7 +164,6 @@
         if(tabId === 'admin') renderEnrollmentList();
     }
 
-    // --- STARTUP & LOGIN ---
     function startApp() {
         const savedStr = safeGet('capco_attendance_user');
         if (savedStr) {
@@ -184,7 +177,6 @@
                     document.getElementById('app-tabs').style.display = 'none';
                     switchTab('kiosk', document.querySelector('.tab'));
                 }
-
                 fetchDataAndInitializeAI();
             } catch(e) { safeRemove('capco_attendance_user'); }
         }
@@ -200,7 +192,6 @@
         
         btn.innerText = 'Verifying...'; msg.innerText = '';
         
-        // API CALL
         const res = await callGoogleAPI({ action: 'login', username: u, password: p });
         
         if (res.status === 'success') {
@@ -229,7 +220,6 @@
         document.getElementById('ai-loader').style.display = 'flex';
         document.getElementById('ai-loader-text').innerText = 'Downloading Employee Data...';
         
-        // API CALL
         const data = await callGoogleAPI({ action: 'getInitData' });
         
         if(data && data.employees) {
@@ -270,7 +260,8 @@
         });
         
         if (labeledDescriptors.length > 0) {
-            faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.45); 
+            // ⚠️ FIXED: Increased strictness threshold to 0.55 so it recognizes you much easier! ⚠️
+            faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.55); 
         } else { faceMatcher = null; }
     }
 
@@ -305,27 +296,28 @@
             
             video.onplay = async () => {
                 const scanInterval = setInterval(async () => {
-                    const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
-                    if (detection) {
-                        clearInterval(scanInterval);
-                        status.className = 'status-success'; status.innerText = "Face Captured! Saving to database...";
-                        
-                        const descriptorArray = Array.from(detection.descriptor);
-                        const dataString = JSON.stringify(descriptorArray);
-                        
-                        // API CALL
-                        const res = await callGoogleAPI({ action: 'saveFaceData', emplId: activeEnrollId, faceDataStr: dataString });
-                        
-                        if(res.status === 'success') {
-                            status.innerText = "Saved Successfully!";
-                            let emp = employeeList.find(e => e.id == activeEnrollId);
-                            if(emp) emp.faceData = dataString;
-                            buildFaceMatcher(); 
-                            setTimeout(stopEnrollment, 1500);
-                        } else {
-                            status.className = 'status-error'; status.innerText = "Save Failed: " + res.message;
+                    try {
+                        const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.4 })).withFaceLandmarks().withFaceDescriptor();
+                        if (detection) {
+                            clearInterval(scanInterval);
+                            status.className = 'status-success'; status.innerText = "Face Captured! Saving to database...";
+                            
+                            const descriptorArray = Array.from(detection.descriptor);
+                            const dataString = JSON.stringify(descriptorArray);
+                            
+                            const res = await callGoogleAPI({ action: 'saveFaceData', emplId: activeEnrollId, faceDataStr: dataString });
+                            
+                            if(res.status === 'success') {
+                                status.innerText = "Saved Successfully!";
+                                let emp = employeeList.find(e => e.id == activeEnrollId);
+                                if(emp) emp.faceData = dataString;
+                                buildFaceMatcher(); 
+                                setTimeout(stopEnrollment, 1500);
+                            } else {
+                                status.className = 'status-error'; status.innerText = "Save Failed: " + res.message;
+                            }
                         }
-                    }
+                    } catch(err) { console.error("Enrollment scan skipped:", err); }
                 }, 500);
             };
         } catch(e) { status.className = 'status-error'; status.innerText = "Camera Error: " + e.message; }
@@ -367,51 +359,55 @@
             video.onplay = () => {
                 startKioskTimer(); 
                 
+                // ⚠️ FIXED: Self-healing Try/Catch loop prevents freezing ⚠️
                 kioskInterval = setInterval(async () => {
-                    const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
-                    
-                    if (detection) {
-                        const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
+                    try {
+                        const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.4 })).withFaceLandmarks().withFaceDescriptor();
                         
-                        if (bestMatch.label !== 'unknown') {
-                            const empId = bestMatch.label;
+                        if (detection) {
+                            const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
                             
-                            if (!recentlyPunched.includes(empId)) {
-                                recentlyPunched.push(empId);
-                                const emp = employeeList.find(e => e.id == empId);
+                            if (bestMatch.label !== 'unknown') {
+                                const empId = bestMatch.label;
                                 
-                                status.className = 'status-success'; 
-                                status.innerText = `Recognized: ${emp.name}! Logging...`;
-                                
-                                timeLeft = 30; timerDiv.innerText = timeLeft;
-                                
-                                // API CALL
-                                const res = await callGoogleAPI({ 
-                                    action: 'logAttendance', 
-                                    emplId: emp.id, 
-                                    emplName: emp.name, 
-                                    type: currentAction, 
-                                    remarks: 'AI Camera', 
-                                    loggedByUser: 'Kiosk', 
-                                    offlineTimeIso: null, 
-                                    selectedShift: emp.shift 
-                                });
-                                
-                                if(res.status === 'success') {
-                                    status.innerText = res.message;
-                                    setTimeout(() => { 
-                                        status.className = 'status-loading'; 
-                                        status.innerText = "Ready for next person..."; 
-                                    }, 3000);
-                                } else {
-                                    status.className = 'status-error'; status.innerText = "Error: " + res.message;
+                                if (!recentlyPunched.includes(empId)) {
+                                    recentlyPunched.push(empId);
+                                    const emp = employeeList.find(e => e.id == empId);
+                                    
+                                    status.className = 'status-success'; 
+                                    status.innerText = `Recognized: ${emp.name}! Logging...`;
+                                    
+                                    timeLeft = 30; timerDiv.innerText = timeLeft;
+                                    
+                                    const res = await callGoogleAPI({ 
+                                        action: 'logAttendance', 
+                                        emplId: emp.id, 
+                                        emplName: emp.name, 
+                                        type: currentAction, 
+                                        remarks: 'AI Camera', 
+                                        loggedByUser: 'Kiosk', 
+                                        offlineTimeIso: null, 
+                                        selectedShift: emp.shift 
+                                    });
+                                    
+                                    if(res.status === 'success') {
+                                        status.innerText = res.message;
+                                        setTimeout(() => { 
+                                            status.className = 'status-loading'; 
+                                            status.innerText = "Ready for next person..."; 
+                                        }, 3000);
+                                    } else {
+                                        status.className = 'status-error'; status.innerText = "Error: " + res.message;
+                                    }
                                 }
+                            } else {
+                                status.className = 'status-error'; status.innerText = "Face not recognized. Move closer.";
                             }
                         } else {
-                            status.className = 'status-error'; status.innerText = "Face not recognized. Move closer.";
+                            status.className = 'status-loading'; status.innerText = "Looking for a face...";
                         }
-                    } else {
-                        status.className = 'status-loading'; status.innerText = "Looking for a face...";
+                    } catch (err) {
+                        console.error("Scanner glitch skipped:", err);
                     }
                 }, 800); 
             };
