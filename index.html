@@ -3,55 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Capco AI Sandbox</title>
+    <title>Capco Master AI App</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
-        :root { --bg-dark: #09090b; --surface: #18181b; --border: #3f3f46; --text-main: #f4f4f5; --text-muted: #a1a1aa; --accent: #3b82f6; --success: #10b981; --danger: #ef4444; --warning: #f59e0b; }
-        body { font-family: 'Outfit', sans-serif; color: var(--text-main); margin: 0; background: var(--bg-dark); min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 15px; }
+        :root { --bg-dark: #09090b; --surface: #18181b; --surface-hover: #27272a; --border: #3f3f46; --text-main: #f4f4f5; --text-muted: #a1a1aa; --accent: #3b82f6; --accent-hover: #2563eb; --success: #10b981; --danger: #ef4444; --warning: #f59e0b; }
+        body { font-family: 'Outfit', sans-serif; color: var(--text-main); margin: 0; background: var(--bg-dark); min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 15px; overflow-x: hidden; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
         
-        .app-container { background: rgba(24, 24, 27, 0.65); border: 1px solid rgba(255,255,255,0.08); width: 100%; max-width: 500px; border-radius: 24px; display: none; overflow: hidden; margin-bottom: 20px;}
-        #login-container { display: block; width: 100%; max-width: 380px; text-align: center; background: rgba(24, 24, 27, 0.7); border: 1px solid var(--border); padding: 40px 30px; border-radius: 24px; margin-top: 10vh; }
-        #login-container img { width: 100%; max-width: 220px; height: auto; margin-bottom:25px; display: block; margin-left: auto; margin-right: auto; }
+        .app-container { background: rgba(24, 24, 27, 0.65); backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.08); width: 100%; max-width: 500px; border-radius: 24px; box-shadow: 0 30px 60px -12px rgba(0,0,0,0.7); display: none; animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1); overflow: hidden; }
+        @keyframes slideUpFade { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideIn { from { transform: translateX(20px); opacity: 0;} to { transform: translateX(0); opacity: 1;} }
+
+        /* 💎 MODERN TOAST NOTIFICATION 💎 */
+        #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); background: rgba(16, 185, 129, 0.95); backdrop-filter: blur(10px); color: white; padding: 16px 30px; border-radius: 30px; box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4); z-index: 100000; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 15px; opacity: 0; pointer-events: none; border: 1px solid rgba(255,255,255,0.2); }
+        #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        #login-container { display: block; width: 100%; max-width: 380px; text-align: center; background: rgba(24, 24, 27, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); padding: 40px 30px; border-radius: 24px; margin-top: 10vh; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        #login-container img { max-width: 220px; height: auto; margin-bottom:25px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); display: block; margin-left: auto; margin-right: auto; }
         
-        .login-input { width: 100%; padding: 16px; margin: 10px 0; border-radius: 14px; border: 1px solid var(--border); background: rgba(0,0,0,0.4); color: white; font-family: 'Outfit'; font-size: 15px; box-sizing: border-box; }
-        .login-input:focus { outline: none; border-color: var(--accent); }
-        .btn-main { width: 100%; padding: 16px; background: var(--accent); color: white; border: none; border-radius: 14px; font-weight: 600; font-size: 16px; cursor: pointer; margin-top: 15px; }
-        .btn-main:active { transform: scale(0.98); }
+        .login-input, select, input[type="text"], input[type="date"], input[type="month"], input[type="number"], input[type="time"], input[type="password"], textarea { width: 100%; padding: 16px; margin: 10px 0; border-radius: 14px; border: 1px solid var(--border); background: rgba(0,0,0,0.4); color: white; font-family: 'Outfit'; font-size: 15px; box-sizing: border-box; transition: all 0.3s ease; appearance: auto; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
+        .login-input:focus, select:focus, input:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px rgba(59,130,246,0.15), inset 0 2px 4px rgba(0,0,0,0.2); background: rgba(0,0,0,0.6); }
+        
+        .btn-main { width: 100%; padding: 16px; background: var(--accent); color: white; border: none; border-radius: 14px; font-weight: 600; font-size: 16px; cursor: pointer; margin-top: 15px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 15px rgba(59,130,246,0.35); }
+        .btn-main:hover { background: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(59,130,246,0.45); } .btn-main:active { transform: translateY(1px) scale(0.98); }
+
+        .header { padding: 22px 25px; background: linear-gradient(180deg, rgba(30, 41, 59, 0.4) 0%, rgba(24, 24, 27, 0.1) 100%); border-bottom: 1px solid rgba(59, 130, 246, 0.2); display: flex; flex-direction: column; gap: 18px; }
+        .header-top { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .app-branding { display: flex; align-items: center; }
+        .app-branding img { height: 36px; width: auto; object-fit: contain; } 
+        .app-branding h2 { margin: 0; font-size: 16px; font-weight: 600; color: var(--text-main); margin-left: 12px; padding-left: 12px; border-left: 2px solid rgba(255,255,255,0.15); }
+        
+        .header-actions { display: flex; gap: 10px; }
+        .icon-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); cursor: pointer; border-radius: 12px; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; transition: all 0.2s; }
+        .icon-btn:hover { background: rgba(255,255,255,0.15); color: var(--text-main); transform: translateY(-2px); }
+        
+        .header-bottom { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .live-clock-container { background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(59, 130, 246, 0.3); padding: 6px 20px; border-radius: 30px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5), 0 4px 15px rgba(59, 130, 246, 0.1); }
+        .live-clock { font-size: 15px; color: var(--accent); font-weight: 600; letter-spacing: 0.8px; text-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
+        .badge-row { display: flex; gap: 10px; align-items: center; }
+        .user-badge { font-size: 12px; font-weight: 500; background: rgba(255,255,255,0.05); padding: 5px 14px; border-radius: 20px; color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); }
+        .network-badge { font-size: 12px; font-weight: 600; padding: 5px 14px; border-radius: 20px; border: 1px solid rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.1); color: var(--success); }
 
         .tabs { display: flex; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .tab { flex: 1; padding: 18px 0; text-align: center; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-muted); border-bottom: 2px solid transparent; } 
-        .tab.active { color: var(--accent); border-bottom: 2px solid var(--accent); background: rgba(59,130,246,0.1); }
-        .view-section { padding: 25px; display: none; }
-        .view-section.active { display: block; }
+        .tab { flex: 1; padding: 18px 0; text-align: center; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-muted); transition: all 0.3s; border-bottom: 2px solid transparent; } 
+        .tab:hover { color: var(--text-main); background: rgba(255,255,255,0.03); } 
+        .tab.active { color: var(--accent); border-bottom: 2px solid var(--accent); background: linear-gradient(to top, rgba(59,130,246,0.15), transparent); text-shadow: 0 0 10px rgba(59,130,246,0.3); }
+        .view-section { padding: 25px; display: none; opacity: 0; transform: translateX(10px); }
+        .view-section.active { display: block; animation: slideIn 0.3s forwards; }
 
-        .card { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 16px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;} 
-        .card h4 { margin: 0; font-size: 16px; color: var(--text-main); } 
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+        .btn-action { padding: 18px; border: none; border-radius: 16px; font-weight: 600; font-size: 16px; color: white; cursor: pointer; transition: all 0.2s; box-shadow: 0 6px 15px rgba(0,0,0,0.2); text-transform: uppercase; } 
+        .btn-action:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.3); filter: brightness(1.1); }
+        .btn-action:active { transform: translateY(1px); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        .bg-in { background: linear-gradient(135deg, var(--success), #059669); } 
+        .bg-out { background: linear-gradient(135deg, var(--danger), #dc2626); } 
+        .bg-perm { background: linear-gradient(135deg, var(--warning), #d97706); color: #000; } 
+        .bg-leave { background: linear-gradient(135deg, #64748b, #475569); } 
 
         .video-container { position: relative; width: 100%; max-width: 400px; margin: 0 auto; border-radius: 20px; overflow: hidden; border: 3px solid var(--accent); box-shadow: 0 10px 30px rgba(59,130,246,0.2); display: none; background: #000; }
         video { width: 100%; height: auto; display: block; transform: scaleX(-1); }
         canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); }
         
-        .kiosk-btn { padding: 25px; font-size: 20px; border: none; border-radius: 16px; color: white; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 15px; transition: transform 0.2s; }
-        .kiosk-btn:active { transform: scale(0.96); }
-        .btn-in { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4); }
-        .btn-out { background: linear-gradient(135deg, #ef4444, #dc2626); box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4); }
-
         #ai-status { text-align: center; padding: 15px; margin-top: 15px; border-radius: 12px; font-weight: bold; font-size: 16px; display: none; }
         .status-loading { background: rgba(245, 158, 11, 0.2); color: var(--warning); border: 1px solid var(--warning); }
         .status-success { background: rgba(16, 185, 129, 0.2); color: var(--success); border: 1px solid var(--success); }
         .status-error { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
-        
         #timer-display { text-align: center; font-size: 40px; font-weight: bold; color: var(--accent); margin: 15px 0; display: none; }
 
         #ai-loader { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 99999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; display: none;}
         .spinner { border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid var(--accent); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px;}
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Shared Components */
+        .card { background: rgba(255,255,255,0.03); padding: 20px; border-radius: 18px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.05); border-left: 4px solid var(--accent); position: relative; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2); } 
+        .card h4 { margin: 0 0 10px 0; font-size: 16px; color: var(--text-main); } 
+        .card p { margin: 8px 0; font-size: 13px; color: var(--text-muted); } 
+        .edit-badge { position: absolute; top: 18px; right: 18px; background: rgba(255,255,255,0.1); padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: 1px solid rgba(255,255,255,0.05); } 
+        .edit-badge:hover { background: var(--accent); color: white; border-color: var(--accent); }
+
+        .dropdown-container { position: relative; margin-bottom: 20px; }
+        .dropdown-list { position: absolute; top: calc(100% + 8px); left: 0; right: 0; background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; max-height: 250px; overflow-y: auto; display: none; z-index: 9999; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
+        .dropdown-item { padding: 14px 18px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); transition: all 0.2s; font-size: 14px; color: var(--text-main); font-weight: 500;} 
+        .dropdown-item:hover { background: var(--accent); color: white; padding-left: 24px; } 
+
+        .sub-tabs-container { overflow-x: auto; margin-bottom: 20px; border-radius: 14px; padding-bottom: 4px; }
+        .sub-tabs { display: flex; gap: 8px; background: rgba(0,0,0,0.3); padding: 6px; border: 1px solid rgba(255,255,255,0.05); min-width: max-content; border-radius: 14px;}
+        .sub-tab { flex: 1; padding: 10px 16px; border-radius: 10px; border: none; background: transparent; color: var(--text-muted); font-family: 'Outfit'; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s;} 
+        .sub-tab.active { background: var(--surface-hover); color: var(--text-main); box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);}
+
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px;}
+        .stat-box { background: rgba(0,0,0,0.3); padding: 22px 15px; border-radius: 18px; text-align: center; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .stat-box h3 { margin: 0; font-size: 34px; font-weight: 700; color: var(--text-main); }
+        .stat-box p { margin: 8px 0 0 0; font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 500;}
+
+        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 10000; justify-content: center; align-items: center; }
+        .modal-content { background: var(--surface); padding: 35px; border-radius: 28px; width: 85%; max-width: 420px; max-height: 85vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 30px 60px rgba(0,0,0,0.8); }
+        .modal-btns { display: flex; gap: 14px; margin-top: 25px;}
+
+        #print-section { display: none; }
+        @media print { html, body { background: #ffffff !important; color: #000000 !important; } body > *:not(#print-section) { display: none !important; } #print-section { display: block !important; } * { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; } }
     </style>
 </head>
 <body>
+
+<div id="toast">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+    <span id="toast-msg">Success!</span>
+</div>
 
 <div id="ai-loader">
     <div class="spinner"></div>
@@ -61,7 +123,7 @@
 
 <div id="login-container">
     <img src="https://i.postimg.cc/C1fJDfZC/Capco-Logo.png?v=final" alt="Capco Logo">
-    <h2 style="margin:0 0 20px 0; font-weight: 600;">AI Testing Sandbox</h2>
+    <h2 style="margin:0 0 20px 0; font-weight: 600;">Security Portal</h2>
     <div style="display: flex; flex-direction: column; width: 100%;">
         <input type="text" id="login-user" class="login-input" placeholder="User Name" onkeydown="if(event.key === 'Enter') document.getElementById('login-pass').focus();">
         <input type="password" id="login-pass" class="login-input" placeholder="Password" onkeydown="if(event.key === 'Enter') handleLogin();">
@@ -71,18 +133,33 @@
 </div>
 
 <div class="app-container" id="main-app">
-    <div style="padding: 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1);">
-        <h3 style="margin:0; color:var(--accent);">Capco AI Engine</h3>
-        <p style="margin:5px 0 0 0; font-size: 12px; color:var(--text-muted);" id="user-info"></p>
-        <button onclick="logout()" style="background:transparent; border:1px solid rgba(255,255,255,0.2); color:white; padding:5px 15px; border-radius:10px; margin-top:10px; cursor:pointer;">Logout</button>
+    <div class="header">
+        <div class="header-top">
+            <div class="app-branding">
+                <img src="https://i.postimg.cc/C1fJDfZC/Capco-Logo.png?v=final" alt="Logo">
+                <h2>HRMS</h2>
+            </div>
+            <div class="header-actions">
+                <button class="icon-btn" onclick="hardRefreshApp(event)"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
+                <button class="icon-btn logout" onclick="logout()"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></button>
+            </div>
+        </div>
+        <div class="header-bottom">
+            <div class="live-clock-container"><div id="live-clock" class="live-clock">Loading time...</div></div>
+            <div class="badge-row" style="margin-top: 4px;">
+                <span class="user-badge" id="display-user">--</span>
+                <span class="network-badge" id="network-status">🟢 Online</span>
+            </div>
+        </div>
     </div>
 
     <div class="tabs" id="app-tabs">
-        <div class="tab active" onclick="switchTab('kiosk', this)">Standby Kiosk</div>
-        <div class="tab" onclick="switchTab('admin', this)">Admin (Enroll Faces)</div>
+        <div class="tab active" onclick="switchTab('entry', this)">Entry</div>
+        <div class="tab" onclick="switchTab('history', this)">History</div>
+        <div class="tab" id="tab-admin" onclick="switchTab('admin', this)" style="display:none;">Inventory</div>
     </div>
 
-    <div id="view-kiosk" class="view-section active">
+    <div id="view-kiosk" class="view-section">
         <div id="kiosk-home">
             <h3 style="text-align:center; margin-top:0;">Face Recognition Terminal</h3>
             <p style="text-align:center; color:var(--text-muted); font-size:14px; margin-bottom:25px;">Select action to activate camera</p>
@@ -101,55 +178,241 @@
         </div>
     </div>
 
-    <div id="view-admin" class="view-section">
-        <h3 style="margin-top:0;">1. Enroll Employee Faces</h3>
-        <p style="font-size:13px; color:var(--warning);">Before the AI can recognize someone, you MUST enroll their face here first.</p>
+    <div id="view-entry" class="view-section active">
+        <div class="dropdown-container">
+            <label>Select Employee</label>
+            <input type="text" id="empl-search-input" class="dropdown-input" placeholder="Search & tap to select..." autocomplete="off" onclick="openDropdown('empl-dropdown-list')" oninput="filterDropdown('empl-search-input', 'empl-dropdown-list', 'empl-selected-id')">
+            <input type="hidden" id="empl-selected-id">
+            <div id="empl-dropdown-list" class="dropdown-list"></div>
+        </div>
         
-        <div id="enrollment-camera-view" style="display:none; margin-bottom: 20px;">
-            <div class="video-container" id="enroll-video-container" style="display:block;">
-                <video id="enroll-video" autoplay muted playsinline></video>
-            </div>
-            <div id="enroll-status" class="status-loading" style="display:block;">Position face in camera...</div>
-            <button class="btn-main" style="background:var(--danger); margin-top:10px;" onclick="stopEnrollment()">Cancel Enrollment</button>
+        <div class="dropdown-container" id="shift-select-container" style="display:none; margin-top:-10px;">
+            <label style="color: var(--accent);">Adjust Shift Timing (OT Staff)</label>
+            <select id="entry-shift-select" class="dropdown-input" style="padding: 14px; cursor: pointer;"></select>
         </div>
 
-        <div id="admin-empl-list" style="max-height: 50vh; overflow-y: auto;"></div>
+        <div id="live-status-badge" class="status-badge" style="border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3);">Select an employee to check status</div>
+        <input type="hidden" id="current-empl-status">
+
+        <label>Action</label>
+        <div class="btn-grid">
+            <button class="btn-action bg-in" id="btn-in" onclick="submitAttendance('in')">Clock In</button>
+            <button class="btn-action bg-out" id="btn-out" onclick="submitAttendance('out')">Clock Out</button>
+            <button class="btn-action bg-perm" id="btn-perm" onclick="submitAttendance('permission')">Permission</button>
+            <button class="btn-action bg-leave" id="btn-leave" onclick="submitAttendance('leave')">Mark Leave</button>
+        </div>
+        <label>Remarks (Optional)</label>
+        <input type="text" id="entry-remarks" placeholder="Add note...">
+    </div>
+
+    <div id="view-history" class="view-section">
+        <div style="display:flex; gap:15px;">
+            <div style="flex:1;"><label>Month</label><input type="month" id="hist-month"></div>
+            <div style="flex:1;"><label>Exact Date</label><input type="date" id="hist-date"></div>
+        </div>
+        <div class="dropdown-container">
+            <label>Filter Employee (Optional)</label>
+            <input type="text" id="hist-empl-search-input" class="dropdown-input" placeholder="Search & tap to select..." autocomplete="off" onclick="openDropdown('hist-empl-dropdown-list')" oninput="filterDropdown('hist-empl-search-input', 'hist-empl-dropdown-list', 'hist-empl-selected-id')">
+            <input type="hidden" id="hist-empl-selected-id">
+            <div id="hist-empl-dropdown-list" class="dropdown-list"></div>
+        </div>
+        <button class="btn-main" style="margin-top:0;" onclick="loadHistory()">Search Records</button>
+        <div id="history-results" style="margin-top:25px; max-height: 45vh; overflow-y:auto; padding-right:8px;"></div>
+    </div>
+
+    <div id="view-admin" class="view-section">
+        <div class="sub-tabs-container">
+            <div class="sub-tabs">
+                <button class="sub-tab active" id="sub-btn-dash" onclick="switchAdminSubTab('dash')">Dashboard</button>
+                <button class="sub-tab" id="sub-btn-empdash" onclick="switchAdminSubTab('empdash')">Emp Dash</button>
+                <button class="sub-tab" id="sub-btn-leave" onclick="switchAdminSubTab('leave')">Leaves</button>
+                <button class="sub-tab" id="sub-btn-empl" onclick="switchAdminSubTab('empl')">Employees</button>
+                <button class="sub-tab" id="sub-btn-user" onclick="switchAdminSubTab('user')">Users</button>
+            </div>
+        </div>
+
+        <div id="admin-dash-section">
+            <h3 style="margin-top:0; color:var(--text-main);">Today's Overview</h3>
+            <div class="stats-grid">
+                <div class="stat-box"><h3 id="dash-total">--</h3><p>Total Staff</p></div>
+                <div class="stat-box"><h3 id="dash-present" style="color:var(--success);">--</h3><p>Present</p></div>
+                <div class="stat-box" style="border-left: 3px solid var(--success);"><h3 id="dash-in">--</h3><p>Currently IN</p></div>
+                <div class="stat-box" style="border-left: 3px solid var(--border);"><h3 id="dash-out">--</h3><p>Punched OUT</p></div>
+                <div class="stat-box" style="border-left: 3px solid var(--danger);"><h3 id="dash-leave" style="color:var(--danger);">--</h3><p>On Leave</p></div>
+                <div class="stat-box" style="border-left: 3px solid var(--warning);"><h3 id="dash-late" style="color:var(--warning);">--</h3><p>Late Arrivals</p></div>
+            </div>
+            <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; margin-top: 10px;">
+                <label>Export Monthly Data to CSV</label>
+                <div style="display:flex; gap:10px;">
+                    <input type="month" id="export-month" style="margin-bottom:0;">
+                    <button class="btn-main" style="margin-top:0;" onclick="downloadCSV()">Export CSV</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="admin-empdash-section" style="display:none;">
+            <h3 style="margin-top:0; color:var(--text-main);">Monthly Salary Engine</h3>
+            <label>Select Month</label><input type="month" id="empdash-month">
+            <div class="dropdown-container">
+                <label>Select Employee</label>
+                <input type="text" id="empdash-search" class="dropdown-input" placeholder="Search & tap to select..." autocomplete="off" onclick="openDropdown('empdash-dropdown-list')" oninput="filterDropdown('empdash-search', 'empdash-dropdown-list', 'empdash-id')">
+                <input type="hidden" id="empdash-id">
+                <div id="empdash-dropdown-list" class="dropdown-list"></div>
+            </div>
+            <button class="btn-main" style="margin-top:0;" onclick="generateEmpDash()">Generate Report</button>
+            <div id="empdash-results" style="margin-top:25px; padding-bottom: 20px;"></div>
+        </div>
+
+        <div id="admin-leave-section" style="display:none;">
+            <h3 style="margin-top:0; color:var(--text-main);">Assign Leave</h3>
+            <div class="dropdown-container">
+                <label>Select Employee</label>
+                <input type="text" id="leave-empl-search" class="dropdown-input" placeholder="Search & tap to select..." autocomplete="off" onclick="openDropdown('leave-empl-dropdown')" oninput="filterDropdown('leave-empl-search', 'leave-empl-dropdown', 'leave-empl-id')">
+                <input type="hidden" id="leave-empl-id">
+                <div id="leave-empl-dropdown" class="dropdown-list"></div>
+            </div>
+            <label>Leave Date</label><input type="date" id="leave-date">
+            <label>Reason / Remarks</label><input type="text" id="leave-remarks" placeholder="e.g., Annual Leave, Sick Leave">
+            <button class="btn-main" style="margin-top:0; background: var(--danger); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);" onclick="submitAdminLeave()">Mark as Leave</button>
+        </div>
+
+        <div id="admin-empl-section" style="display:none;">
+            <h3 style="margin-top:0; color:var(--text-main);">Employee Master Data</h3>
+            
+            <div id="enrollment-camera-view" style="display:none; margin-bottom: 20px; text-align:center;">
+                <div class="video-container" id="enroll-video-container" style="display:block;">
+                    <video id="enroll-video" autoplay muted playsinline></video>
+                </div>
+                <div id="enroll-status" class="status-loading" style="display:block;">Position face in camera...</div>
+                <button class="btn-main" style="background:var(--danger); margin-top:10px;" onclick="stopEnrollment()">Cancel Enrollment</button>
+            </div>
+
+            <div id="admin-empl-container">
+                <div style="display:flex; gap:12px;">
+                    <button class="btn-main" style="margin-top:0; margin-bottom:15px; background: var(--success); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);" onclick="openEmplModal()">+ Add New</button>
+                    <button class="btn-main" style="margin-top:0; margin-bottom:15px; background: transparent; border: 2px solid var(--accent); color: var(--accent); box-shadow: none;" onclick="openBulkModal()">Bulk Add</button>
+                </div>
+                <input type="text" id="search-admin-empl" class="search-bar" placeholder="🔍 Search Employee list..." onkeyup="filterAdminCards('admin-empl-list', this.value)">
+                <div id="admin-empl-list" style="max-height: 40vh; overflow-y:auto; margin-bottom:15px; padding-right:8px;"></div>
+            </div>
+        </div>
+
+        <div id="admin-user-section" style="display:none;">
+            <button class="btn-main" style="margin-top:0; margin-bottom:15px; background: var(--success); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);" onclick="openUserModal()">+ Add New App User</button>
+            <input type="text" id="search-admin-user" class="search-bar" placeholder="🔍 Search User list..." onkeyup="filterAdminCards('admin-users-list', this.value)">
+            <div id="admin-users-list" style="max-height: 35vh; overflow-y:auto; margin-bottom:15px; padding-right:8px;"></div>
+        </div>
+    </div>
+</div>
+
+<div id="print-section"></div>
+
+<div class="modal" id="edit-att-modal">
+    <div class="modal-content">
+        <h3 style="margin-top:0; color: var(--text-main); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">Edit Record (Audited)</h3>
+        <input type="hidden" id="edit-att-row">
+        <label>In Time (HH:mm)</label><input type="time" id="edit-att-in">
+        <label>Out Time (HH:mm)</label><input type="time" id="edit-att-out">
+        <label>Perm Out (HH:mm)</label><input type="time" id="edit-att-perm">
+        <label>Remarks</label><input type="text" id="edit-att-rem" placeholder="Add edit reason...">
+        <div class="modal-btns">
+            <button class="btn-main" style="background:transparent; border: 2px solid rgba(255,255,255,0.2); box-shadow: none;" onclick="closeModals()">Cancel</button>
+            <button class="btn-main" onclick="saveAdminAtt()">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="bulk-empl-modal">
+    <div class="modal-content" style="max-width: 450px;">
+        <h3 style="margin-top:0; color: var(--text-main); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">Bulk Add Employees</h3>
+        <label>Format: ID, Name, Shift, Category, LeaveBalance</label>
+        <textarea id="bulk-csv-input" placeholder="247, Prasanna, REGULAR, Staff Without OT, 0" style="min-height: 150px; font-family: monospace;"></textarea>
+        <div class="modal-btns">
+            <button class="btn-main" style="background:transparent; border: 2px solid rgba(255,255,255,0.2); box-shadow: none;" onclick="closeModals()">Cancel</button>
+            <button class="btn-main" style="background: var(--success); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);" onclick="saveBulkEmpl()">Upload List</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="edit-empl-modal">
+    <div class="modal-content">
+        <h3 style="margin-top:0; color: var(--text-main); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;" id="empl-modal-title">Employee Details</h3>
+        <input type="hidden" id="empl-row">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+            <div><label>ID</label><input type="text" id="empl-id"></div>
+            <div><label>Name</label><input type="text" id="empl-name"></div>
+            <div><label>Shift</label><select id="empl-shift"></select></div>
+            <div><label>Category</label><select id="empl-category"><option value="Staff Without OT">Staff Without OT</option><option value="Staff With OT">Staff With OT</option><option value="Staff With SOT">Staff With SOT</option></select></div>
+            <div><label>Leave Bal</label><input type="number" step="0.5" id="empl-leavebal"></div>
+            <div><label>PIN (Optional)</label><input type="number" id="empl-pin"></div>
+            <div><label>Gross Salary</label><input type="number" id="empl-gross"></div>
+            <div><label>Basic</label><input type="number" id="empl-basic"></div>
+            <div><label>HRA</label><input type="number" id="empl-hra"></div>
+            <div><label>Conveyance</label><input type="number" id="empl-conv"></div>
+            <div><label>Spl Allow.</label><input type="number" id="empl-spl"></div>
+            <div><label>Medical</label><input type="number" id="empl-med"></div>
+            <div><label>E.S.I</label><input type="number" id="empl-esi"></div>
+            <div><label>PF</label><input type="number" id="empl-pf"></div>
+            <div><label>VPF</label><input type="number" id="empl-vpf"></div>
+            <div><label>PT</label><input type="number" id="empl-pt"></div>
+        </div>
+        <div class="modal-btns">
+            <button class="btn-main" style="background:transparent; border: 2px solid rgba(255,255,255,0.2); box-shadow: none;" onclick="closeModals()">Cancel</button>
+            <button class="btn-main" style="background:var(--danger); display:none;" id="btn-del-empl" onclick="deleteAdminEmpl()">Delete</button>
+            <button class="btn-main" onclick="saveAdminEmpl()">Save</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="edit-user-modal">
+    <div class="modal-content">
+        <h3 style="margin-top:0; color: var(--text-main); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;" id="user-modal-title">User details</h3>
+        <input type="hidden" id="user-row">
+        <label>User Name</label><input type="text" id="user-name">
+        <label>Role <span style="font-size: 11px; color: var(--warning);">(Admin, HR, Security, Standby)</span></label><input type="text" id="user-role">
+        <label>Email</label><input type="text" id="user-email">
+        <label>Password</label><input type="text" id="user-pass">
+        <div class="modal-btns">
+            <button class="btn-main" style="background:transparent; border: 2px solid rgba(255,255,255,0.2); box-shadow: none;" onclick="closeModals()">Cancel</button>
+            <button class="btn-main" style="background:var(--danger); display:none;" id="btn-del-user" onclick="deleteAdminUser()">Delete</button>
+            <button class="btn-main" onclick="saveAdminUser()">Save</button>
+        </div>
     </div>
 </div>
 
 <script>
-    // ⚠️ PRE-FILLED WITH YOUR EXACT GOOGLE URL ⚠️
+    // ⚠️ YOUR GOOGLE APPS SCRIPT URL ⚠️
     const GOOGLE_API_URL = "https://script.google.com/macros/s/AKfycbzsV8eP3nMkVUva7WwHkDKi820Mv0BEm0kTxxM__EamMerhKdhxQJKtVRA0mSI0_EjK/exec";
 
     let currentUser = { username: '', role: '' };
-    let employeeList = [];
-    let modelsLoaded = false;
-    let faceMatcher = null;
-    let kioskInterval = null;
-    let kioskTimer = null;
-    let currentAction = 'in';
-    let recentlyPunched = []; 
+    let employeeList = []; let shiftsData = []; let historyData = [];
+    let modelsLoaded = false; let faceMatcher = null; let kioskInterval = null; let kioskTimer = null;
+    let currentAction = 'in'; let recentlyPunched = []; let currentPayslipHTML = ""; 
 
-    // --- ADVANCED API BRIDGE FUNCTION ---
+    // --- MODERN TOAST & AUDIO ENGINE ---
+    function showToast(msg) {
+        const toast = document.getElementById('toast');
+        document.getElementById('toast-msg').innerText = msg;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 4000);
+    }
+
+    function playSuccessSound(name) {
+        if ('speechSynthesis' in window) {
+            let utterance = new SpeechSynthesisUtterance("Thank you, " + name + ".");
+            utterance.rate = 1.0;
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+
+    // --- API BRIDGE ---
     async function callGoogleAPI(payload) {
         try {
-            const response = await fetch(GOOGLE_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(payload),
-                redirect: 'follow'
-            });
+            const response = await fetch(GOOGLE_API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload), redirect: 'follow' });
             const rawText = await response.text(); 
-            try {
-                return JSON.parse(rawText);
-            } catch(e) {
-                console.error("Google responded with HTML instead of Data:", rawText);
-                return { status: 'error', message: 'API Permission Error. Re-deploy Google Script as "Anyone".' };
-            }
-        } catch (error) {
-            console.error("Fetch Error:", error);
-            return { status: 'error', message: 'Network error or Google API offline.' };
-        }
+            try { return JSON.parse(rawText); } 
+            catch(e) { return { status: 'error', message: 'API Permission Error. Re-deploy Google Script as "Anyone".' }; }
+        } catch (error) { return { status: 'error', message: 'Network error or Google API offline.' }; }
     }
 
     function safeGet(key) { try { return localStorage.getItem(key); } catch(e) { return null; } }
@@ -160,8 +423,29 @@
         document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.getElementById('view-' + tabId).classList.add('active');
-        el.classList.add('active');
-        if(tabId === 'admin') renderEnrollmentList();
+        if(el) el.classList.add('active');
+        if(tabId === 'admin') switchAdminSubTab('dash');
+    }
+
+    function updateLiveClock() { 
+        var clockEl = document.getElementById('live-clock'); if(!clockEl) return;
+        try { clockEl.innerText = new Date().toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }) + " | " + new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }); } 
+        catch(e) { clockEl.innerText = new Date().toLocaleString(); }
+    }
+
+    function applyRolePermissions() {
+        document.getElementById('tab-admin').style.display = (currentUser.role === 'Admin' || currentUser.role === 'HR') ? 'block' : 'none';
+        document.getElementById('sub-btn-user').style.display = (currentUser.role === 'Admin') ? 'block' : 'none';
+        
+        if (currentUser.role === 'Standby') {
+            document.getElementById('app-tabs').style.display = 'none'; 
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById('view-kiosk').classList.add('active'); 
+        } else {
+            document.getElementById('app-tabs').style.display = 'flex';
+            document.getElementById('btn-leave').style.display = (currentUser.role === 'Admin' || currentUser.role === 'HR') ? 'block' : 'none'; 
+            document.getElementById('btn-perm').style.gridColumn = (currentUser.role === 'Admin' || currentUser.role === 'HR') ? 'auto' : 'span 2'; 
+        }
     }
 
     function startApp() {
@@ -169,14 +453,10 @@
         if (savedStr) {
             try {
                 currentUser = JSON.parse(savedStr);
-                document.getElementById('user-info').innerText = "Logged in: " + currentUser.username + " (" + currentUser.role + ")";
+                document.getElementById('display-user').innerText = currentUser.username;
                 document.getElementById('login-container').style.display = 'none';
                 document.getElementById('main-app').style.display = 'block';
-                
-                if(currentUser.role === 'Standby') {
-                    document.getElementById('app-tabs').style.display = 'none';
-                    switchTab('kiosk', document.querySelector('.tab'));
-                }
+                applyRolePermissions();
                 fetchDataAndInitializeAI();
             } catch(e) { safeRemove('capco_attendance_user'); }
         }
@@ -189,61 +469,36 @@
         const msg = document.getElementById('login-msg');
 
         if (!u || !p) return msg.innerText = "Enter credentials";
-        
         btn.innerText = 'Verifying...'; msg.innerText = '';
         
         const res = await callGoogleAPI({ action: 'login', username: u, password: p });
-        
         if (res.status === 'success') {
-            btn.innerText = 'Login';
-            safeSet('capco_attendance_user', JSON.stringify({username: res.username, role: res.role}));
-            startApp();
-        } else { 
-            msg.innerText = res.message; 
-            btn.innerText = 'Login'; 
-        }
+            btn.innerText = 'Login'; safeSet('capco_attendance_user', JSON.stringify({username: res.username, role: res.role})); startApp();
+        } else { msg.innerText = res.message; btn.innerText = 'Login'; }
     }
 
     function logout() {
-        safeRemove('capco_attendance_user');
-        document.getElementById('login-user').value = '';
-        document.getElementById('login-pass').value = '';
-        document.getElementById('login-msg').innerText = '';
-        document.getElementById('main-app').style.display = 'none';
-        document.getElementById('login-container').style.display = 'block';
-        stopKioskMode();
-        stopEnrollment();
+        safeRemove('capco_attendance_user'); currentUser = { username: '', role: '' };
+        document.getElementById('login-user').value = ''; document.getElementById('login-pass').value = ''; document.getElementById('main-app').style.display = 'none'; document.getElementById('login-container').style.display = 'block';
+        stopKioskMode(); stopEnrollment(); switchTab('entry');
     }
 
-    // --- AI INITIALIZATION ---
+    // --- AI & DATA INIT ---
     async function fetchDataAndInitializeAI() {
-        document.getElementById('ai-loader').style.display = 'flex';
-        document.getElementById('ai-loader-text').innerText = 'Downloading Employee Data...';
-        
+        document.getElementById('network-status').innerText = '🔄 Syncing...';
         const data = await callGoogleAPI({ action: 'getInitData' });
-        
         if(data && data.employees) {
-            employeeList = data.employees;
-            document.getElementById('ai-loader-text').innerText = 'Loading AI Neural Nets (Takes ~5-10s)...';
+            employeeList = data.employees; shiftsData = data.shifts;
+            populateDropdowns(data.employees); safeSet('capco_empl_cache', JSON.stringify(data.employees)); safeSet('capco_shifts_cache', JSON.stringify(data.shifts));
+            document.getElementById('network-status').innerText = '🟢 Online'; document.getElementById('network-status').style.color = 'var(--success)';
             
             try {
                 const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
                 await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
                 await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
                 await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
-                
-                modelsLoaded = true;
-                buildFaceMatcher(); 
-                
-                document.getElementById('ai-loader').style.display = 'none';
-                renderEnrollmentList();
-            } catch (error) {
-                alert("Failed to load AI Models. Check internet connection.");
-                document.getElementById('ai-loader').style.display = 'none';
-            }
-        } else {
-            alert("Error fetching data from Google.");
-            document.getElementById('ai-loader').style.display = 'none';
+                modelsLoaded = true; buildFaceMatcher();
+            } catch (error) { console.error("AI Models failed to load"); }
         }
     }
 
@@ -252,194 +507,183 @@
         employeeList.forEach(emp => {
             if (emp.faceData && emp.faceData !== '') {
                 try {
-                    const arr = JSON.parse(emp.faceData);
-                    const floatArr = new Float32Array(arr);
+                    const floatArr = new Float32Array(JSON.parse(emp.faceData));
                     labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(emp.id.toString(), [floatArr]));
                 } catch(e) {}
             }
         });
-        
-        if (labeledDescriptors.length > 0) {
-            // ⚠️ FIXED: Increased strictness threshold to 0.55 so it recognizes you much easier! ⚠️
-            faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.55); 
-        } else { faceMatcher = null; }
+        faceMatcher = labeledDescriptors.length > 0 ? new faceapi.FaceMatcher(labeledDescriptors, 0.55) : null; 
     }
 
-
-    // --- 📸 ADMIN ENROLLMENT LOGIC 📸 ---
-    let activeEnrollId = null;
-    
-    function renderEnrollmentList() {
-        let html = '';
-        employeeList.forEach(emp => {
-            let hasFace = (emp.faceData && emp.faceData !== '') ? '<span style="color:var(--success); font-size:12px;">✅ Enrolled</span>' : '<span style="color:var(--danger); font-size:12px;">❌ Not Enrolled</span>';
-            html += `<div class="card"><div><h4>${emp.name} (${emp.id})</h4>${hasFace}</div>`;
-            html += `<button class="btn-main" style="width:auto; margin:0; padding:10px 15px; font-size:13px;" onclick="startEnrollment('${emp.id}')">📸 Enroll</button></div>`;
-        });
-        document.getElementById('admin-empl-list').innerHTML = html;
-    }
-
-    async function startEnrollment(empId) {
-        if(!modelsLoaded) return alert("AI is still loading...");
-        activeEnrollId = empId;
-        document.getElementById('admin-empl-list').style.display = 'none';
-        document.getElementById('enrollment-camera-view').style.display = 'block';
-        
-        const video = document.getElementById('enroll-video');
-        const status = document.getElementById('enroll-status');
-        status.className = 'status-loading'; status.innerText = "Starting Camera...";
-
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-            video.srcObject = stream;
-            status.innerText = "Looking for face... Please look directly at the camera.";
-            
-            video.onplay = async () => {
-                const scanInterval = setInterval(async () => {
-                    try {
-                        const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.4 })).withFaceLandmarks().withFaceDescriptor();
-                        if (detection) {
-                            clearInterval(scanInterval);
-                            status.className = 'status-success'; status.innerText = "Face Captured! Saving to database...";
-                            
-                            const descriptorArray = Array.from(detection.descriptor);
-                            const dataString = JSON.stringify(descriptorArray);
-                            
-                            const res = await callGoogleAPI({ action: 'saveFaceData', emplId: activeEnrollId, faceDataStr: dataString });
-                            
-                            if(res.status === 'success') {
-                                status.innerText = "Saved Successfully!";
-                                let emp = employeeList.find(e => e.id == activeEnrollId);
-                                if(emp) emp.faceData = dataString;
-                                buildFaceMatcher(); 
-                                setTimeout(stopEnrollment, 1500);
-                            } else {
-                                status.className = 'status-error'; status.innerText = "Save Failed: " + res.message;
-                            }
-                        }
-                    } catch(err) { console.error("Enrollment scan skipped:", err); }
-                }, 500);
-            };
-        } catch(e) { status.className = 'status-error'; status.innerText = "Camera Error: " + e.message; }
-    }
-
-    function stopEnrollment() {
-        const video = document.getElementById('enroll-video');
-        if(video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); }
-        document.getElementById('enrollment-camera-view').style.display = 'none';
-        document.getElementById('admin-empl-list').style.display = 'block';
-        activeEnrollId = null;
-        renderEnrollmentList();
-    }
-
-    // --- ⏱️ SMART KIOSK LOGIC ⏱️ ---
+    // --- KIOSK LOGIC ---
     async function startKioskMode(action) {
         if(!modelsLoaded) return alert("AI is still loading...");
         if(!faceMatcher) return alert("No employees have been enrolled yet! Go to Admin tab first.");
-        
-        currentAction = action;
-        recentlyPunched = []; 
-        document.getElementById('kiosk-home').style.display = 'none';
-        document.getElementById('kiosk-camera-view').style.display = 'block';
-        document.getElementById('kiosk-action-title').innerText = `Punch ${action.toUpperCase()}`;
-        
-        const video = document.getElementById('kiosk-video');
-        const status = document.getElementById('ai-status');
-        const timerDiv = document.getElementById('timer-display');
-        document.getElementById('video-container').style.display = 'block';
-        
-        status.style.display = 'block';
-        status.className = 'status-loading'; status.innerText = "Starting Camera...";
-        timerDiv.style.display = 'block';
+        currentAction = action; recentlyPunched = []; 
+        document.getElementById('kiosk-home').style.display = 'none'; document.getElementById('kiosk-camera-view').style.display = 'block'; document.getElementById('kiosk-action-title').innerText = `Punch ${action.toUpperCase()}`;
+        const video = document.getElementById('kiosk-video'); const status = document.getElementById('ai-status'); const timerDiv = document.getElementById('timer-display');
+        document.getElementById('video-container').style.display = 'block'; status.style.display = 'block'; status.className = 'status-loading'; status.innerText = "Starting Camera..."; timerDiv.style.display = 'block';
 
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-            video.srcObject = stream;
-            
+            video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
             video.onplay = () => {
                 startKioskTimer(); 
-                
-                // ⚠️ FIXED: Self-healing Try/Catch loop prevents freezing ⚠️
                 kioskInterval = setInterval(async () => {
                     try {
                         const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.4 })).withFaceLandmarks().withFaceDescriptor();
-                        
                         if (detection) {
                             const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
-                            
                             if (bestMatch.label !== 'unknown') {
                                 const empId = bestMatch.label;
-                                
                                 if (!recentlyPunched.includes(empId)) {
-                                    recentlyPunched.push(empId);
-                                    const emp = employeeList.find(e => e.id == empId);
-                                    
-                                    status.className = 'status-success'; 
-                                    status.innerText = `Recognized: ${emp.name}! Logging...`;
-                                    
+                                    recentlyPunched.push(empId); const emp = employeeList.find(e => e.id == empId);
+                                    status.className = 'status-success'; status.innerText = `Recognized: ${emp.name}! Logging...`;
                                     timeLeft = 30; timerDiv.innerText = timeLeft;
                                     
-                                    const res = await callGoogleAPI({ 
-                                        action: 'logAttendance', 
-                                        emplId: emp.id, 
-                                        emplName: emp.name, 
-                                        type: currentAction, 
-                                        remarks: 'AI Camera', 
-                                        loggedByUser: 'Kiosk', 
-                                        offlineTimeIso: null, 
-                                        selectedShift: emp.shift 
-                                    });
-                                    
+                                    const res = await callGoogleAPI({ action: 'logAttendance', emplId: emp.id, emplName: emp.name, type: currentAction, remarks: 'AI Camera', loggedByUser: 'Kiosk', offlineTimeIso: null, selectedShift: emp.shift });
                                     if(res.status === 'success') {
+                                        showToast(`${emp.name} Punched ${currentAction.toUpperCase()}`);
+                                        playSuccessSound(emp.name);
                                         status.innerText = res.message;
-                                        setTimeout(() => { 
-                                            status.className = 'status-loading'; 
-                                            status.innerText = "Ready for next person..."; 
-                                        }, 3000);
-                                    } else {
-                                        status.className = 'status-error'; status.innerText = "Error: " + res.message;
-                                    }
+                                        setTimeout(() => { status.className = 'status-loading'; status.innerText = "Ready for next person..."; }, 3000);
+                                    } else { status.className = 'status-error'; status.innerText = "Error: " + res.message; }
                                 }
-                            } else {
-                                status.className = 'status-error'; status.innerText = "Face not recognized. Move closer.";
-                            }
-                        } else {
-                            status.className = 'status-loading'; status.innerText = "Looking for a face...";
-                        }
-                    } catch (err) {
-                        console.error("Scanner glitch skipped:", err);
-                    }
+                            } else { status.className = 'status-error'; status.innerText = "Face not recognized. Move closer."; }
+                        } else { status.className = 'status-loading'; status.innerText = "Looking for a face..."; }
+                    } catch (err) {}
                 }, 800); 
             };
         } catch(e) { status.className = 'status-error'; status.innerText = "Camera Error: " + e.message; }
     }
 
     let timeLeft = 30;
-    function startKioskTimer() {
-        timeLeft = 30;
-        document.getElementById('timer-display').innerText = timeLeft;
-        kioskTimer = setInterval(() => {
-            timeLeft--;
-            document.getElementById('timer-display').innerText = timeLeft;
-            if(timeLeft <= 0) stopKioskMode();
-        }, 1000);
+    function startKioskTimer() { timeLeft = 30; document.getElementById('timer-display').innerText = timeLeft; kioskTimer = setInterval(() => { timeLeft--; document.getElementById('timer-display').innerText = timeLeft; if(timeLeft <= 0) stopKioskMode(); }, 1000); }
+    function stopKioskMode() { clearInterval(kioskInterval); clearInterval(kioskTimer); const video = document.getElementById('kiosk-video'); if(video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); } document.getElementById('kiosk-camera-view').style.display = 'none'; document.getElementById('video-container').style.display = 'none'; document.getElementById('ai-status').style.display = 'none'; document.getElementById('timer-display').style.display = 'none'; document.getElementById('kiosk-home').style.display = 'block'; }
+
+    // --- ENROLLMENT LOGIC ---
+    function renderEnrollmentList() {
+        let html = '';
+        employeeList.forEach(emp => {
+            let hasFace = (emp.faceData && emp.faceData !== '') ? '<span style="color:var(--success); font-size:12px;">✅ Enrolled</span>' : '<span style="color:var(--danger); font-size:12px;">❌ Not Enrolled</span>';
+            html += `<div class="card"><div><h4>${emp.name} (${emp.id})</h4>${hasFace}</div><button class="btn-main" style="width:auto; margin:0; padding:10px 15px; font-size:13px;" onclick="startEnrollment('${emp.id}')">📸 Enroll</button></div>`;
+        });
+        document.getElementById('admin-empl-list').innerHTML = html;
     }
 
-    function stopKioskMode() {
-        clearInterval(kioskInterval);
-        clearInterval(kioskTimer);
-        const video = document.getElementById('kiosk-video');
-        if(video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); }
+    async function startEnrollment(empId) {
+        if(!modelsLoaded) return alert("AI is still loading...");
+        activeEnrollId = empId; document.getElementById('admin-empl-container').style.display = 'none'; document.getElementById('enrollment-camera-view').style.display = 'block';
+        const video = document.getElementById('enroll-video'); const status = document.getElementById('enroll-status'); status.className = 'status-loading'; status.innerText = "Starting Camera...";
+        try {
+            video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+            status.innerText = "Looking for face... Please look directly at the camera.";
+            video.onplay = async () => {
+                const scanInterval = setInterval(async () => {
+                    try {
+                        const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.4 })).withFaceLandmarks().withFaceDescriptor();
+                        if (detection) {
+                            clearInterval(scanInterval); status.className = 'status-success'; status.innerText = "Face Captured! Saving...";
+                            const dataString = JSON.stringify(Array.from(detection.descriptor));
+                            const res = await callGoogleAPI({ action: 'saveFaceData', emplId: activeEnrollId, faceDataStr: dataString });
+                            if(res.status === 'success') {
+                                status.innerText = "Saved Successfully!"; showToast("Face Enrolled Successfully");
+                                let emp = employeeList.find(e => e.id == activeEnrollId); if(emp) emp.faceData = dataString;
+                                buildFaceMatcher(); setTimeout(stopEnrollment, 1500);
+                            } else { status.className = 'status-error'; status.innerText = "Save Failed: " + res.message; }
+                        }
+                    } catch(err) {}
+                }, 500);
+            };
+        } catch(e) { status.className = 'status-error'; status.innerText = "Camera Error: " + e.message; }
+    }
+    function stopEnrollment() { const video = document.getElementById('enroll-video'); if(video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); } document.getElementById('enrollment-camera-view').style.display = 'none'; document.getElementById('admin-empl-container').style.display = 'block'; activeEnrollId = null; renderEnrollmentList(); }
+
+    // --- MANUAL ENTRY & ADMIN LOGIC ---
+    function openDropdown(listId) { document.querySelectorAll('.dropdown-list').forEach(l => l.style.display='none'); document.getElementById(listId).style.display = 'block'; }
+    function populateDropdowns(data) { const listEntry = document.getElementById('empl-dropdown-list'); const listHist = document.getElementById('hist-empl-dropdown-list'); const listLeave = document.getElementById('leave-empl-dropdown'); const listEmpDash = document.getElementById('empdash-dropdown-list'); listEntry.innerHTML = ''; listHist.innerHTML = ''; listLeave.innerHTML = ''; listEmpDash.innerHTML = ''; data.forEach(e => { const text = `${e.id} - ${e.name}`; let div = `<div class="dropdown-item" onclick="chooseEntry('${e.id}', '${text}')">${text}</div>`; listEntry.innerHTML += div; listHist.innerHTML += `<div class="dropdown-item" onclick="chooseHist('${e.id}', '${text}')">${text}</div>`; listLeave.innerHTML += `<div class="dropdown-item" onclick="chooseLeave('${e.id}', '${text}')">${text}</div>`; listEmpDash.innerHTML += `<div class="dropdown-item" onclick="chooseEmpDash('${e.id}', '${text}')">${text}</div>`; }); }
+    function filterDropdown(inputId, listId, hiddenId) { const filter = document.getElementById(inputId).value.toLowerCase(); const list = document.getElementById(listId); const items = list.getElementsByClassName('dropdown-item'); let hasVisible = false; list.style.display = 'block'; for(let i=0; i<items.length; i++) { if (items[i].innerText.toLowerCase().includes(filter)) { items[i].style.display = 'block'; hasVisible = true; } else { items[i].style.display = 'none'; } } if(!hasVisible) list.style.display = 'none'; document.getElementById(hiddenId).value = ''; if(listId === 'empl-dropdown-list') { document.getElementById('live-status-badge').style.display = 'none'; } }
+    
+    function chooseEntry(id, text) { document.getElementById('empl-search-input').value = text; document.getElementById('empl-selected-id').value = id; document.getElementById('empl-dropdown-list').style.display = 'none'; const emp = employeeList.find(e => e.id.toString() === id.toString()); if (emp && emp.category === 'Staff With OT') { document.getElementById('shift-select-container').style.display = 'block'; document.getElementById('entry-shift-select').innerHTML = shiftsData.map(s => `<option value="${s.name}" ${s.name === emp.shift ? 'selected' : ''}>${s.name} (${s.start}-${s.end})</option>`).join(''); } else { document.getElementById('shift-select-container').style.display = 'none'; } fetchLiveStatus(id); }
+    function chooseHist(id, text) { document.getElementById('hist-empl-search-input').value = text; document.getElementById('hist-empl-selected-id').value = id; document.getElementById('hist-empl-dropdown-list').style.display = 'none'; }
+    function chooseLeave(id, text) { document.getElementById('leave-empl-search').value = text; document.getElementById('leave-empl-id').value = id; document.getElementById('leave-empl-dropdown').style.display = 'none'; }
+    function chooseEmpDash(id, text) { document.getElementById('empdash-search').value = text; document.getElementById('empdash-id').value = id; document.getElementById('empdash-dropdown-list').style.display = 'none'; }
+    document.addEventListener('click', function(e) { if (!e.target.closest('.dropdown-container')) { document.querySelectorAll('.dropdown-list').forEach(l => l.style.display='none'); } });
+
+    async function fetchLiveStatus(id) {
+        const badge = document.getElementById('live-status-badge'); badge.style.display = 'block'; badge.innerText = 'Checking status...'; badge.style.color = "var(--text-muted)";
+        const res = await callGoogleAPI({ action: 'getEmployeeStatus', emplId: id });
+        if(res.status) { badge.innerText = res.msg; document.getElementById('current-empl-status').value = res.status; if(res.status === 'IN') badge.style.color = "var(--success)"; else if(res.status === 'OUT') badge.style.color = "var(--text-main)"; else if(res.status === 'LEAVE') badge.style.color = "var(--danger)"; else badge.style.color = "var(--warning)"; }
+    }
+
+    async function submitAttendance(action) {
+        const emplId = document.getElementById('empl-selected-id').value; const currentStatus = document.getElementById('current-empl-status').value; const remarks = document.getElementById('entry-remarks').value; const status = document.getElementById('entry-status');
+        if(!emplId) { status.style.color = 'var(--danger)'; status.innerText = 'Please select a valid employee!'; return; }
+        if (action === 'in' && currentStatus === 'IN') { status.style.color = 'var(--danger)'; status.innerText = 'Employee is already IN.'; return; }
+        if (action === 'out' && (currentStatus === 'OUT' || currentStatus === 'NONE')) { status.style.color = 'var(--danger)'; status.innerText = 'Cannot punch out before punching in.'; return; }
         
-        document.getElementById('kiosk-camera-view').style.display = 'none';
-        document.getElementById('video-container').style.display = 'none';
-        document.getElementById('ai-status').style.display = 'none';
-        document.getElementById('timer-display').style.display = 'none';
-        document.getElementById('kiosk-home').style.display = 'block';
+        const emp = employeeList.find(e => e.id.toString() === emplId.toString());
+        let selectedShift = emp.shift || 'REGULAR'; if (emp.category === 'Staff With OT') selectedShift = document.getElementById('entry-shift-select').value;
+        
+        status.style.color = 'var(--text-muted)'; status.innerText = 'Recording...';
+        const res = await callGoogleAPI({ action: 'logAttendance', emplId: emp.id, emplName: emp.name, type: action, remarks: remarks, loggedByUser: currentUser.username, offlineTimeIso: null, selectedShift: selectedShift });
+        if(res.status === 'success') {
+            showToast(`${emp.name} logged ${action.toUpperCase()} successfully.`); playSuccessSound(emp.name);
+            document.getElementById('entry-remarks').value = ''; document.getElementById('empl-search-input').value = ''; document.getElementById('empl-selected-id').value = ''; document.getElementById('live-status-badge').style.display = 'none'; document.getElementById('shift-select-container').style.display = 'none'; status.innerText = '';
+        } else { status.style.color = 'var(--danger)'; status.innerText = 'Error: ' + res.message; }
     }
 
-    startApp();
-</script>
+    // --- ADMIN VIEWS ---
+    function switchAdminSubTab(subTabName) { if (subTabName === 'user' && currentUser.role !== 'Admin') return; document.querySelectorAll('.sub-tab').forEach(e => e.classList.remove('active')); document.getElementById('sub-btn-' + subTabName).classList.add('active'); ['dash','empdash','leave','empl','user'].forEach(s => document.getElementById('admin-'+s+'-section').style.display = 'none'); document.getElementById('admin-'+subTabName+'-section').style.display = 'block'; if (subTabName === 'dash') loadDashboard(); else if (subTabName === 'empl') loadAdminEmplData(); else if (subTabName === 'user') loadAdminUsersData(); }
+    
+    async function loadDashboard() { const stats = await callGoogleAPI({action: 'getDashboardStats'}); if(stats.total) { document.getElementById('dash-total').innerText = stats.total; document.getElementById('dash-present').innerText = stats.present; document.getElementById('dash-in').innerText = stats.inNow; document.getElementById('dash-out').innerText = stats.outNow; document.getElementById('dash-leave').innerText = stats.leave; document.getElementById('dash-late').innerText = stats.late; } }
+    
+    async function generateEmpDash() {
+        const m = document.getElementById('empdash-month').value; const id = document.getElementById('empdash-id').value; const resDiv = document.getElementById('empdash-results');
+        if(!m || !id) return resDiv.innerHTML = '<p style="color:var(--danger); text-align:center;">Please select an Employee and Month.</p>';
+        resDiv.innerHTML = '<p style="color:var(--text-muted); text-align:center;">Fetching Payroll Data...</p>';
+        const data = await callGoogleAPI({action: 'getEmpDashData', emplId: id, month: m});
+        if(data.status === 'error') return resDiv.innerHTML = `<p style="color:var(--danger); text-align:center;">${data.message}</p>`;
+        let roundedNet = Math.round(data.netPay); let wordsNet = numberToWords(roundedNet);
+        resDiv.innerHTML = `<div class="emp-dash-box" style="border-color: var(--accent);"><h4>🧑‍💼 ${data.emplName} <span style="float:right; font-size:12px; color:var(--text-muted); font-weight:400;">(${data.category})</span></h4><div class="emp-dash-row">Leave Balance: <span>${data.leaveBal}</span></div><div class="emp-dash-row">Month: <span>${data.month}</span></div></div><div class="emp-dash-box"><h4>📅 Attendance Summary</h4><div class="emp-dash-row">Present Days: <span style="color:var(--success);">${data.present}</span></div><div class="emp-dash-row">Leaves Taken: <span style="color:var(--danger);">${data.leaves}</span></div><div class="emp-dash-row" style="border-top:1px solid rgba(255,255,255,0.1); padding-top:5px;">Total Payable Days: <span>${data.payableDays}</span></div></div>${(data.category === 'Staff With OT' || data.category === 'Staff With SOT') ? `<div class="emp-dash-box"><h4>⏱️ Overtime Engine</h4><div class="emp-dash-row">Extra Hours: <span>${data.extraHours} hrs</span></div><div class="emp-dash-row">Per Hour Rate: <span>₹${data.perHour.toFixed(2)}</span></div><div class="emp-dash-row">OT Earnings: <span style="color:var(--success);">+ ₹${data.otEarnings.toFixed(2)}</span></div></div>` : ''}<div class="emp-dash-box"><h4>💸 Salary Breakdown</h4><div class="emp-dash-row">Prorated Gross: <span>₹${data.gross.toLocaleString('en-IN')}</span></div></div><div class="emp-dash-box"><h4>📉 Deductions</h4><div class="emp-dash-row">Total Deductions: <span style="color:var(--danger);">- ₹${data.deductions.toLocaleString('en-IN')}</span></div></div><div class="emp-dash-box" style="background: rgba(16, 185, 129, 0.1); border-color: var(--success); margin-bottom: 5px;"><div class="emp-dash-row" style="margin-bottom:0;"><span style="font-size: 16px;">NET PAYOUT</span><span class="emp-dash-highlight">₹${roundedNet.toLocaleString('en-IN')}</span></div></div><div class="emp-dash-words">(Rupees ${wordsNet})</div><button class="btn-main" style="background: #2563eb;" onclick="downloadPayslip()">🖨️ Download PDF Payslip</button>`;
+        currentPayslipHTML = `<div style="padding: 20px; font-family: Arial; background: white; color: black; max-width:800px; margin:0 auto;"><h2>Capco Payslip - ${data.month}</h2><hr><p><b>Name:</b> ${data.emplName} | <b>ID:</b> ${data.emplId}</p><p><b>Net Pay:</b> Rs. ${roundedNet.toLocaleString('en-IN')}</p></div>`;
+    }
+    
+    function downloadPayslip() { if(!currentPayslipHTML) return; let printDiv = document.getElementById('print-section'); if(!printDiv) { printDiv = document.createElement('div'); printDiv.id = 'print-section'; document.body.appendChild(printDiv); } printDiv.innerHTML = currentPayslipHTML; setTimeout(() => window.print(), 300); }
 
+    async function loadHistory() { const m = document.getElementById('hist-month').value; let d = document.getElementById('hist-date').value; if(d) d = d.split('-').reverse().join('-'); const q = document.getElementById('hist-empl-selected-id').value || document.getElementById('hist-empl-search-input').value; document.getElementById('history-results').innerHTML = '<p style="text-align:center; color: var(--text-muted);">Searching...</p>'; const data = await callGoogleAPI({action: 'searchHistory', month: m, date: d, query: q}); renderHistory(data); }
+    function renderHistory(data) { historyData = data; const div = document.getElementById('history-results'); if(!data || data.length === 0) return div.innerHTML = '<p style="text-align:center;">No records found.</p>'; let html = ''; data.forEach((r, idx) => { let editBtn = (currentUser.role === 'Admin' || currentUser.role === 'HR') ? `<div class="edit-badge" onclick="openAttEdit(${idx})">Edit</div>` : ''; html += `<div class="card">${editBtn}<h4 style="color:var(--accent);">${r.date}</h4><div><strong>${r.emplId} - ${r.emplName}</strong></div><div style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">In: <strong style="color:var(--success)">${r.inTime || '--'}</strong> | Out: <strong style="color:var(--danger)">${r.outTime || '--'}</strong></div></div>`; }); div.innerHTML = html; }
+    
+    async function submitAdminLeave() { const id = document.getElementById('leave-empl-id').value; const date = document.getElementById('leave-date').value; const rem = document.getElementById('leave-remarks').value; if(!id || !date) return alert("Select employee and date"); const res = await callGoogleAPI({action: 'markLeaveAdmin', emplId: id, date: date, remarks: rem, user: currentUser.username}); if(res.status==='success') { showToast("Leave Assigned"); document.getElementById('leave-remarks').value=''; } else alert(res.message); }
+    function filterAdminCards(containerId, query) { const filter = query.toLowerCase(); const cards = document.getElementById(containerId).getElementsByClassName('card'); for(let i=0; i<cards.length; i++) { cards[i].style.display = cards[i].innerText.toLowerCase().includes(filter) ? 'block' : 'none'; } }
+    function openAttEdit(idx) { const r = historyData[idx]; document.getElementById('edit-att-row').value = r.rowIndex; document.getElementById('edit-att-in').value = r.inTime; document.getElementById('edit-att-out').value = r.outTime; document.getElementById('edit-att-perm').value = r.permTime; document.getElementById('edit-att-rem').value = r.remarks; document.getElementById('edit-att-modal').style.display = 'flex'; }
+    async function saveAdminAtt() { await callGoogleAPI({action:'adminUpdateRecord', row: document.getElementById('edit-att-row').value, inTime: document.getElementById('edit-att-in').value, outTime: document.getElementById('edit-att-out').value, perm: document.getElementById('edit-att-perm').value, remarks: document.getElementById('edit-att-rem').value, user: currentUser.username}); closeModals(); loadHistory(); showToast("Record Updated"); }
+    async function downloadCSV() { const m = document.getElementById('export-month').value; if (!m) return alert("Select month."); const res = await callGoogleAPI({action:'exportCSV', month: m}); const link = document.createElement('a'); link.href = 'data:text/csv;base64,' + res; link.download = 'Attendance_' + m + '.csv'; link.click(); }
+    
+    async function loadAdminUsersData() { const data = await callGoogleAPI({action:'getAdminUsersData'}); let html = ''; data.forEach((u, idx) => { html += `<div class="card"><div class="edit-badge" onclick='openUserModal(${idx}, ${JSON.stringify(u)})'>Edit</div><h4>${u.username}</h4><p>${u.role}</p></div>`; }); document.getElementById('admin-users-list').innerHTML = html; }
+    function openUserModal(idx, u) { document.getElementById('user-modal-error').innerText = ''; if(u) { document.getElementById('user-row').value = u.rowIndex; document.getElementById('user-name').value = u.username; document.getElementById('user-role').value = u.role; document.getElementById('user-email').value = u.email; document.getElementById('user-pass').value = u.pass; document.getElementById('btn-del-user').style.display = 'block'; } else { ['user-row','user-name','user-role','user-email','user-pass'].forEach(id => document.getElementById(id).value = ''); document.getElementById('btn-del-user').style.display = 'none'; } document.getElementById('edit-user-modal').style.display = 'flex'; }
+    async function saveAdminUser() { await callGoogleAPI({action:'saveUser', row: document.getElementById('user-row').value, username: document.getElementById('user-name').value, role: document.getElementById('user-role').value, email: document.getElementById('user-email').value, pass: document.getElementById('user-pass').value}); closeModals(); loadAdminUsersData(); showToast("User Saved"); }
+    async function deleteAdminUser() { if(confirm('Delete user?')) { await callGoogleAPI({action:'deleteUser', row: document.getElementById('user-row').value}); closeModals(); loadAdminUsersData(); showToast("User Deleted"); } }
+    
+    function loadAdminEmplData() { document.getElementById('empl-shift').innerHTML = shiftsData.map(s => `<option value="${s.name}">${s.name}</option>`).join(''); renderEnrollmentList(); }
+    function openEmplModal(idx, e) { document.getElementById('empl-modal-error').innerText = ''; if(e) { document.getElementById('empl-row').value = e.rowIndex; document.getElementById('empl-id').value = e.id; document.getElementById('empl-name').value = e.name; document.getElementById('empl-shift').value = e.shift; document.getElementById('empl-category').value = e.category; document.getElementById('empl-leavebal').value = e.leaveBal; document.getElementById('empl-pin').value = e.pin; document.getElementById('empl-gross').value = e.gross; document.getElementById('empl-basic').value = e.basic; document.getElementById('empl-hra').value = e.hra; document.getElementById('empl-conv').value = e.conv; document.getElementById('empl-spl').value = e.spl; document.getElementById('empl-med').value = e.med; document.getElementById('empl-esi').value = e.esi; document.getElementById('empl-pf').value = e.pf; document.getElementById('empl-vpf').value = e.vpf; document.getElementById('empl-pt').value = e.pt; document.getElementById('btn-del-empl').style.display = 'block'; } else { ['empl-row','empl-id','empl-name','empl-pin','empl-gross','empl-basic','empl-hra','empl-conv','empl-spl','empl-med','empl-esi','empl-pf','empl-vpf','empl-pt'].forEach(id => document.getElementById(id).value = ''); document.getElementById('empl-leavebal').value = '0'; document.getElementById('btn-del-empl').style.display = 'none'; } document.getElementById('edit-empl-modal').style.display = 'flex'; }
+    async function saveAdminEmpl() { await callGoogleAPI({action:'saveEmpl', row: document.getElementById('empl-row').value, id: document.getElementById('empl-id').value, name: document.getElementById('empl-name').value, shift: document.getElementById('empl-shift').value, category: document.getElementById('empl-category').value, leavebal: document.getElementById('empl-leavebal').value, gross: document.getElementById('empl-gross').value, basic: document.getElementById('empl-basic').value, hra: document.getElementById('empl-hra').value, conv: document.getElementById('empl-conv').value, spl: document.getElementById('empl-spl').value, med: document.getElementById('empl-med').value, esi: document.getElementById('empl-esi').value, pf: document.getElementById('empl-pf').value, vpf: document.getElementById('empl-vpf').value, pt: document.getElementById('empl-pt').value, pin: document.getElementById('empl-pin').value}); closeModals(); fetchDataAndInitializeAI(); showToast("Employee Saved"); }
+    async function deleteAdminEmpl() { if(confirm('Delete employee?')) { await callGoogleAPI({action:'deleteEmpl', row: document.getElementById('empl-row').value}); closeModals(); fetchDataAndInitializeAI(); showToast("Employee Deleted"); } }
+    
+    function openBulkModal() { document.getElementById('bulk-csv-input').value = ''; document.getElementById('bulk-empl-modal').style.display = 'flex'; }
+    async function saveBulkEmpl() { const res = await callGoogleAPI({action:'bulkAddEmployees', csv: document.getElementById('bulk-csv-input').value}); closeModals(); fetchDataAndInitializeAI(); showToast(`Added ${res.count||0} Employees`); }
+    
+    function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
+
+    window.onscroll = function() { const btn = document.getElementById("scrollToTopBtn"); if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) { btn.style.display = "flex"; } else { btn.style.display = "none"; } };
+    function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+
+    // ⚠️ STARTUP SEQUENCE ⚠️
+    setInterval(updateLiveClock, 1000);
+    updateLiveClock();
+    startApp();
+
+    setTimeout(function() { const loader = document.getElementById('loading-state'); if(loader) loader.style.display = 'none'; }, 1500);
+
+</script>
 </body>
 </html>
