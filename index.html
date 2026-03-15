@@ -3,42 +3,441 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Capco Workforce</title>
-    <link rel="icon" type="image/jpeg" href="https://i.postimg.cc/k5YhWmTg/Logo.jpg?v=final">
-    <link rel="apple-touch-icon" href="https://i.postimg.cc/k5YhWmTg/Logo.jpg?v=final">
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#09090b">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Capco HR">
-
+    <title>Capco AI Sandbox</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #09090b; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        iframe { width: 100%; height: 100%; border: none; position: absolute; top: 0; left: 0; z-index: 10; }
+        :root { --bg-dark: #09090b; --surface: #18181b; --border: #3f3f46; --text-main: #f4f4f5; --text-muted: #a1a1aa; --accent: #3b82f6; --success: #10b981; --danger: #ef4444; --warning: #f59e0b; }
+        body { font-family: 'Outfit', sans-serif; color: var(--text-main); margin: 0; background: var(--bg-dark); min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 15px; }
         
-        #loader { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 50; background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.15), transparent 50%), #09090b; color: #f4f4f5; transition: opacity 0.6s ease-out; }
-        #loader img { max-width: 220px; height: auto; margin-bottom: 30px; animation: pulse 2s infinite ease-in-out; }
-        #loader h3 { font-weight: 500; letter-spacing: 1.5px; font-size: 16px; margin: 0; color: #94a3b8; animation: slideUp 0.8s ease-out forwards; opacity: 0; transform: translateY(10px); }
+        .app-container { background: rgba(24, 24, 27, 0.65); border: 1px solid rgba(255,255,255,0.08); width: 100%; max-width: 500px; border-radius: 24px; display: none; overflow: hidden; margin-bottom: 20px;}
+        #login-container { display: block; width: 100%; max-width: 380px; text-align: center; background: rgba(24, 24, 27, 0.7); border: 1px solid var(--border); padding: 40px 30px; border-radius: 24px; margin-top: 10vh; }
+        #login-container img { width: 100%; max-width: 220px; height: auto; margin-bottom:25px; display: block; margin-left: auto; margin-right: auto; }
         
-        @keyframes pulse { 0% { transform: scale(0.98); opacity: 0.85; } 50% { transform: scale(1.02); opacity: 1; } 100% { transform: scale(0.98); opacity: 0.85; } }
-        @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
-        .hidden { opacity: 0; pointer-events: none; }
+        .login-input { width: 100%; padding: 16px; margin: 10px 0; border-radius: 14px; border: 1px solid var(--border); background: rgba(0,0,0,0.4); color: white; font-family: 'Outfit'; font-size: 15px; box-sizing: border-box; }
+        .login-input:focus { outline: none; border-color: var(--accent); }
+        .btn-main { width: 100%; padding: 16px; background: var(--accent); color: white; border: none; border-radius: 14px; font-weight: 600; font-size: 16px; cursor: pointer; margin-top: 15px; }
+        .btn-main:active { transform: scale(0.98); }
+
+        .tabs { display: flex; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .tab { flex: 1; padding: 18px 0; text-align: center; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-muted); border-bottom: 2px solid transparent; } 
+        .tab.active { color: var(--accent); border-bottom: 2px solid var(--accent); background: rgba(59,130,246,0.1); }
+        .view-section { padding: 25px; display: none; }
+        .view-section.active { display: block; }
+
+        .card { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 16px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;} 
+        .card h4 { margin: 0; font-size: 16px; color: var(--text-main); } 
+
+        .video-container { position: relative; width: 100%; max-width: 400px; margin: 0 auto; border-radius: 20px; overflow: hidden; border: 3px solid var(--accent); box-shadow: 0 10px 30px rgba(59,130,246,0.2); display: none; background: #000; }
+        video { width: 100%; height: auto; display: block; transform: scaleX(-1); }
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); }
+        
+        .kiosk-btn { padding: 25px; font-size: 20px; border: none; border-radius: 16px; color: white; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 15px; transition: transform 0.2s; }
+        .kiosk-btn:active { transform: scale(0.96); }
+        .btn-in { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4); }
+        .btn-out { background: linear-gradient(135deg, #ef4444, #dc2626); box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4); }
+
+        #ai-status { text-align: center; padding: 15px; margin-top: 15px; border-radius: 12px; font-weight: bold; font-size: 16px; display: none; }
+        .status-loading { background: rgba(245, 158, 11, 0.2); color: var(--warning); border: 1px solid var(--warning); }
+        .status-success { background: rgba(16, 185, 129, 0.2); color: var(--success); border: 1px solid var(--success); }
+        .status-error { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
+        
+        #timer-display { text-align: center; font-size: 40px; font-weight: bold; color: var(--accent); margin: 15px 0; display: none; }
+
+        #ai-loader { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 99999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; display: none;}
+        .spinner { border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid var(--accent); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px;}
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-    <div id="loader">
-        <img src="https://i.postimg.cc/C1fJDfZC/Capco-Logo.png?v=final" alt="Capco Logo">
-        <h3>SECURE CONNECTION</h3>
+<div id="ai-loader">
+    <div class="spinner"></div>
+    <h2 id="ai-loader-text" style="font-weight: 500;">Loading Neural Networks...</h2>
+    <p style="color:var(--warning); font-size: 12px;">This takes a few seconds on first load.</p>
+</div>
+
+<div id="login-container">
+    <img src="https://i.postimg.cc/C1fJDfZC/Capco-Logo.png?v=final" alt="Capco Logo">
+    <h2 style="margin:0 0 20px 0; font-weight: 600;">AI Testing Sandbox</h2>
+    <div style="display: flex; flex-direction: column; width: 100%;">
+        <input type="text" id="login-user" class="login-input" placeholder="User Name" onkeydown="if(event.key === 'Enter') document.getElementById('login-pass').focus();">
+        <input type="password" id="login-pass" class="login-input" placeholder="Password" onkeydown="if(event.key === 'Enter') handleLogin();">
+        <button type="button" class="btn-main" id="btn-login-submit" onclick="handleLogin()">Login</button>
+    </div>
+    <p id="login-msg" style="color: var(--danger); font-size: 14px; margin-top:15px; font-weight: 500;"></p>
+</div>
+
+<div class="app-container" id="main-app">
+    <div style="padding: 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1);">
+        <h3 style="margin:0; color:var(--accent);">Capco AI Engine</h3>
+        <p style="margin:5px 0 0 0; font-size: 12px; color:var(--text-muted);" id="user-info"></p>
+        <button onclick="logout()" style="background:transparent; border:1px solid rgba(255,255,255,0.2); color:white; padding:5px 15px; border-radius:10px; margin-top:10px; cursor:pointer;">Logout</button>
     </div>
 
-    <iframe id="app-frame" src="https://script.google.com/macros/s/AKfycbzsV8eP3nMkVUva7WwHkDKi820Mv0BEm0kTxxM__EamMerhKdhxQJKtVRA0mSI0_EjK/exec" allow="camera; microphone; autoplay; fullscreen"></iframe>
+    <div class="tabs" id="app-tabs">
+        <div class="tab active" onclick="switchTab('kiosk', this)">Standby Kiosk</div>
+        <div class="tab" onclick="switchTab('admin', this)">Admin (Enroll Faces)</div>
+    </div>
 
-    <script>
-        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(err => console.log('SW bypassed.')); }
-        const loader = document.getElementById('loader'); const iframe = document.getElementById('app-frame');
-        function hideLoader() { loader.classList.add('hidden'); setTimeout(() => { loader.style.display = 'none'; }, 600); }
-        iframe.onload = hideLoader; setTimeout(hideLoader, 4000);
-    </script>
+    <div id="view-kiosk" class="view-section active">
+        <div id="kiosk-home">
+            <h3 style="text-align:center; margin-top:0;">Face Recognition Terminal</h3>
+            <p style="text-align:center; color:var(--text-muted); font-size:14px; margin-bottom:25px;">Select action to activate camera</p>
+            <button class="kiosk-btn btn-in" onclick="startKioskMode('in')">Punch IN</button>
+            <button class="kiosk-btn btn-out" onclick="startKioskMode('out')">Punch OUT</button>
+        </div>
+
+        <div id="kiosk-camera-view" style="display:none;">
+            <h3 style="text-align:center; color:white; margin-top:0;" id="kiosk-action-title">Scanning Face...</h3>
+            <div class="video-container" id="video-container">
+                <video id="kiosk-video" autoplay muted playsinline></video>
+            </div>
+            <div id="timer-display">30</div>
+            <div id="ai-status" class="status-loading">Looking for a face...</div>
+            <button class="btn-main" style="background:transparent; border:1px solid var(--border);" onclick="stopKioskMode()">Cancel & Close</button>
+        </div>
+    </div>
+
+    <div id="view-admin" class="view-section">
+        <h3 style="margin-top:0;">1. Enroll Employee Faces</h3>
+        <p style="font-size:13px; color:var(--warning);">Before the AI can recognize someone, you MUST enroll their face here first.</p>
+        
+        <div id="enrollment-camera-view" style="display:none; margin-bottom: 20px;">
+            <div class="video-container" id="enroll-video-container" style="display:block;">
+                <video id="enroll-video" autoplay muted playsinline></video>
+            </div>
+            <div id="enroll-status" class="status-loading" style="display:block;">Position face in camera...</div>
+            <button class="btn-main" style="background:var(--danger); margin-top:10px;" onclick="stopEnrollment()">Cancel Enrollment</button>
+        </div>
+
+        <div id="admin-empl-list" style="max-height: 50vh; overflow-y: auto;"></div>
+    </div>
+</div>
+
+<script>
+    // ⚠️ PASTE YOUR COPIED GOOGLE APPS SCRIPT URL HERE:
+    const GOOGLE_API_URL = "https://script.google.com/macros/s/AKfycbzsV8eP3nMkVUva7WwHkDKi820Mv0BEm0kTxxM__EamMerhKdhxQJKtVRA0mSI0_EjK/exec";
+
+    // --- GLOBAL VARIABLES ---
+    let currentUser = { username: '', role: '' };
+    let employeeList = [];
+    let modelsLoaded = false;
+    let faceMatcher = null;
+    let kioskInterval = null;
+    let kioskTimer = null;
+    let currentAction = 'in';
+    let recentlyPunched = []; 
+
+    // --- API BRIDGE FUNCTION ---
+    // This talks directly to Google Apps Script bypassing sandboxes
+    async function callGoogleAPI(payload) {
+        try {
+            const response = await fetch(GOOGLE_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload)
+            });
+            return await response.json();
+        } catch (error) {
+            console.error(error);
+            return { status: 'error', message: 'Network error or Google API offline.' };
+        }
+    }
+
+    function safeGet(key) { try { return localStorage.getItem(key); } catch(e) { return null; } }
+    function safeSet(key, val) { try { localStorage.setItem(key, val); } catch(e) {} }
+    function safeRemove(key) { try { localStorage.removeItem(key); } catch(e) {} }
+    
+    function switchTab(tabId, el) {
+        document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('view-' + tabId).classList.add('active');
+        el.classList.add('active');
+        if(tabId === 'admin') renderEnrollmentList();
+    }
+
+    // --- STARTUP & LOGIN ---
+    function startApp() {
+        const savedStr = safeGet('capco_attendance_user');
+        if (savedStr) {
+            try {
+                currentUser = JSON.parse(savedStr);
+                document.getElementById('user-info').innerText = "Logged in: " + currentUser.username + " (" + currentUser.role + ")";
+                document.getElementById('login-container').style.display = 'none';
+                document.getElementById('main-app').style.display = 'block';
+                
+                if(currentUser.role === 'Standby') {
+                    document.getElementById('app-tabs').style.display = 'none';
+                    switchTab('kiosk', document.querySelector('.tab'));
+                }
+
+                fetchDataAndInitializeAI();
+            } catch(e) { safeRemove('capco_attendance_user'); }
+        }
+    }
+
+    async function handleLogin() {
+        if(GOOGLE_API_URL === "YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE") {
+            alert("Developer Error: You must insert your Google Web App URL into line 88 of the HTML code.");
+            return;
+        }
+
+        const u = document.getElementById('login-user').value.trim();
+        const p = document.getElementById('login-pass').value.trim();
+        const btn = document.getElementById('btn-login-submit');
+        const msg = document.getElementById('login-msg');
+
+        if (!u || !p) return msg.innerText = "Enter credentials";
+        
+        btn.innerText = 'Verifying...'; msg.innerText = '';
+        
+        // API CALL
+        const res = await callGoogleAPI({ action: 'login', username: u, password: p });
+        
+        if (res.status === 'success') {
+            btn.innerText = 'Login';
+            safeSet('capco_attendance_user', JSON.stringify({username: res.username, role: res.role}));
+            startApp();
+        } else { 
+            msg.innerText = res.message; 
+            btn.innerText = 'Login'; 
+        }
+    }
+
+    function logout() {
+        safeRemove('capco_attendance_user');
+        document.getElementById('login-user').value = '';
+        document.getElementById('login-pass').value = '';
+        document.getElementById('login-msg').innerText = '';
+        document.getElementById('main-app').style.display = 'none';
+        document.getElementById('login-container').style.display = 'block';
+        stopKioskMode();
+        stopEnrollment();
+    }
+
+    // --- AI INITIALIZATION ---
+    async function fetchDataAndInitializeAI() {
+        document.getElementById('ai-loader').style.display = 'flex';
+        document.getElementById('ai-loader-text').innerText = 'Downloading Employee Data...';
+        
+        // API CALL
+        const data = await callGoogleAPI({ action: 'getInitData' });
+        
+        if(data && data.employees) {
+            employeeList = data.employees;
+            document.getElementById('ai-loader-text').innerText = 'Loading AI Neural Nets (Takes ~5-10s)...';
+            
+            try {
+                const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
+                await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+                await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+                await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+                
+                modelsLoaded = true;
+                buildFaceMatcher(); 
+                
+                document.getElementById('ai-loader').style.display = 'none';
+                renderEnrollmentList();
+            } catch (error) {
+                alert("Failed to load AI Models. Check internet connection.");
+                document.getElementById('ai-loader').style.display = 'none';
+            }
+        } else {
+            alert("Error fetching data from Google.");
+            document.getElementById('ai-loader').style.display = 'none';
+        }
+    }
+
+    function buildFaceMatcher() {
+        const labeledDescriptors = [];
+        employeeList.forEach(emp => {
+            if (emp.faceData && emp.faceData !== '') {
+                try {
+                    const arr = JSON.parse(emp.faceData);
+                    const floatArr = new Float32Array(arr);
+                    labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(emp.id.toString(), [floatArr]));
+                } catch(e) {}
+            }
+        });
+        
+        if (labeledDescriptors.length > 0) {
+            faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.45); 
+        } else { faceMatcher = null; }
+    }
+
+
+    // --- 📸 ADMIN ENROLLMENT LOGIC 📸 ---
+    let activeEnrollId = null;
+    
+    function renderEnrollmentList() {
+        let html = '';
+        employeeList.forEach(emp => {
+            let hasFace = (emp.faceData && emp.faceData !== '') ? '<span style="color:var(--success); font-size:12px;">✅ Enrolled</span>' : '<span style="color:var(--danger); font-size:12px;">❌ Not Enrolled</span>';
+            html += `<div class="card"><div><h4>${emp.name} (${emp.id})</h4>${hasFace}</div>`;
+            html += `<button class="btn-main" style="width:auto; margin:0; padding:10px 15px; font-size:13px;" onclick="startEnrollment('${emp.id}')">📸 Enroll</button></div>`;
+        });
+        document.getElementById('admin-empl-list').innerHTML = html;
+    }
+
+    async function startEnrollment(empId) {
+        if(!modelsLoaded) return alert("AI is still loading...");
+        activeEnrollId = empId;
+        document.getElementById('admin-empl-list').style.display = 'none';
+        document.getElementById('enrollment-camera-view').style.display = 'block';
+        
+        const video = document.getElementById('enroll-video');
+        const status = document.getElementById('enroll-status');
+        status.className = 'status-loading'; status.innerText = "Starting Camera...";
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+            video.srcObject = stream;
+            status.innerText = "Looking for face... Please look directly at the camera.";
+            
+            video.onplay = async () => {
+                const scanInterval = setInterval(async () => {
+                    const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+                    if (detection) {
+                        clearInterval(scanInterval);
+                        status.className = 'status-success'; status.innerText = "Face Captured! Saving to database...";
+                        
+                        const descriptorArray = Array.from(detection.descriptor);
+                        const dataString = JSON.stringify(descriptorArray);
+                        
+                        // API CALL
+                        const res = await callGoogleAPI({ action: 'saveFaceData', emplId: activeEnrollId, faceDataStr: dataString });
+                        
+                        if(res.status === 'success') {
+                            status.innerText = "Saved Successfully!";
+                            let emp = employeeList.find(e => e.id == activeEnrollId);
+                            if(emp) emp.faceData = dataString;
+                            buildFaceMatcher(); 
+                            setTimeout(stopEnrollment, 1500);
+                        } else {
+                            status.className = 'status-error'; status.innerText = "Save Failed: " + res.message;
+                        }
+                    }
+                }, 500);
+            };
+        } catch(e) { status.className = 'status-error'; status.innerText = "Camera Error: " + e.message; }
+    }
+
+    function stopEnrollment() {
+        const video = document.getElementById('enroll-video');
+        if(video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); }
+        document.getElementById('enrollment-camera-view').style.display = 'none';
+        document.getElementById('admin-empl-list').style.display = 'block';
+        activeEnrollId = null;
+        renderEnrollmentList();
+    }
+
+    // --- ⏱️ SMART KIOSK LOGIC ⏱️ ---
+    async function startKioskMode(action) {
+        if(!modelsLoaded) return alert("AI is still loading...");
+        if(!faceMatcher) return alert("No employees have been enrolled yet! Go to Admin tab first.");
+        
+        currentAction = action;
+        recentlyPunched = []; 
+        document.getElementById('kiosk-home').style.display = 'none';
+        document.getElementById('kiosk-camera-view').style.display = 'block';
+        document.getElementById('kiosk-action-title').innerText = `Punch ${action.toUpperCase()}`;
+        
+        const video = document.getElementById('kiosk-video');
+        const status = document.getElementById('ai-status');
+        const timerDiv = document.getElementById('timer-display');
+        document.getElementById('video-container').style.display = 'block';
+        
+        status.style.display = 'block';
+        status.className = 'status-loading'; status.innerText = "Starting Camera...";
+        timerDiv.style.display = 'block';
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+            video.srcObject = stream;
+            
+            video.onplay = () => {
+                startKioskTimer(); 
+                
+                kioskInterval = setInterval(async () => {
+                    const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+                    
+                    if (detection) {
+                        const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
+                        
+                        if (bestMatch.label !== 'unknown') {
+                            const empId = bestMatch.label;
+                            
+                            if (!recentlyPunched.includes(empId)) {
+                                recentlyPunched.push(empId);
+                                const emp = employeeList.find(e => e.id == empId);
+                                
+                                status.className = 'status-success'; 
+                                status.innerText = `Recognized: ${emp.name}! Logging...`;
+                                
+                                timeLeft = 30; timerDiv.innerText = timeLeft;
+                                
+                                // API CALL
+                                const res = await callGoogleAPI({ 
+                                    action: 'logAttendance', 
+                                    emplId: emp.id, 
+                                    emplName: emp.name, 
+                                    type: currentAction, 
+                                    remarks: 'AI Camera', 
+                                    loggedByUser: 'Kiosk', 
+                                    offlineTimeIso: null, 
+                                    selectedShift: emp.shift 
+                                });
+                                
+                                if(res.status === 'success') {
+                                    status.innerText = res.message;
+                                    setTimeout(() => { 
+                                        status.className = 'status-loading'; 
+                                        status.innerText = "Ready for next person..."; 
+                                    }, 3000);
+                                } else {
+                                    status.className = 'status-error'; status.innerText = "Error: " + res.message;
+                                }
+                            }
+                        } else {
+                            status.className = 'status-error'; status.innerText = "Face not recognized. Move closer.";
+                        }
+                    } else {
+                        status.className = 'status-loading'; status.innerText = "Looking for a face...";
+                    }
+                }, 800); 
+            };
+        } catch(e) { status.className = 'status-error'; status.innerText = "Camera Error: " + e.message; }
+    }
+
+    let timeLeft = 30;
+    function startKioskTimer() {
+        timeLeft = 30;
+        document.getElementById('timer-display').innerText = timeLeft;
+        kioskTimer = setInterval(() => {
+            timeLeft--;
+            document.getElementById('timer-display').innerText = timeLeft;
+            if(timeLeft <= 0) stopKioskMode();
+        }, 1000);
+    }
+
+    function stopKioskMode() {
+        clearInterval(kioskInterval);
+        clearInterval(kioskTimer);
+        const video = document.getElementById('kiosk-video');
+        if(video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); }
+        
+        document.getElementById('kiosk-camera-view').style.display = 'none';
+        document.getElementById('video-container').style.display = 'none';
+        document.getElementById('ai-status').style.display = 'none';
+        document.getElementById('timer-display').style.display = 'none';
+        document.getElementById('kiosk-home').style.display = 'block';
+    }
+
+    startApp();
+</script>
+
 </body>
 </html>
