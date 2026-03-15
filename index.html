@@ -131,18 +131,30 @@
     let currentAction = 'in';
     let recentlyPunched = []; 
 
-    // --- API BRIDGE FUNCTION ---
+// --- API BRIDGE FUNCTION ---
     async function callGoogleAPI(payload) {
         try {
             const response = await fetch(GOOGLE_API_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(payload)
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8',
+                },
+                body: JSON.stringify(payload),
+                redirect: 'follow' // ⚠️ CRITICAL: Forces GitHub to follow Google's security redirects
             });
-            return await response.json();
+            
+            const rawText = await response.text(); // Read raw response first
+            
+            try {
+                return JSON.parse(rawText); // Try to convert to data
+            } catch(e) {
+                console.error("Google responded with HTML instead of Data. Response:", rawText);
+                return { status: 'error', message: 'API Permission Error. Did you set "Who has access" to "Anyone"?' };
+            }
+            
         } catch (error) {
-            console.error(error);
-            return { status: 'error', message: 'Network error or Google API offline.' };
+            console.error("Fetch Error:", error);
+            return { status: 'error', message: 'Network error: ' + error.message };
         }
     }
 
