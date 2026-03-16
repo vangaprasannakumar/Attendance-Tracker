@@ -86,34 +86,83 @@
         .status-error { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
         #timer-display { text-align: center; font-size: 45px; font-weight: bold; color: var(--accent); margin: 15px 0; display: none; text-shadow: 0 0 15px rgba(59, 130, 246, 0.5);}
 
-        #ai-loader { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 99999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; display: none;}
-        .spinner { border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid var(--accent); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px;}
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* ⚠️ RESTORED THE OLD BEAUTIFUL LOADER ⚠️ */
+        #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 99999; background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.15), transparent 50%), #09090b; color: #f4f4f5; transition: opacity 0.6s ease-out; }
+        #loader img { max-width: 220px; height: auto; margin-bottom: 30px; animation: pulse 2s infinite ease-in-out; }
+        #loader h3 { font-weight: 500; letter-spacing: 1.5px; font-size: 16px; margin: 0; color: #94a3b8; animation: slideUp 0.8s ease-out forwards; opacity: 0; transform: translateY(10px); }
+        @keyframes pulse { 0% { transform: scale(0.98); opacity: 0.85; } 50% { transform: scale(1.02); opacity: 1; } 100% { transform: scale(0.98); opacity: 0.85; } }
+        @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
+
+        .card { background: rgba(255,255,255,0.03); padding: 20px; border-radius: 18px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.05); border-left: 4px solid var(--accent); position: relative; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2); } 
+        .card:hover { transform: translateY(-3px); background: rgba(255,255,255,0.05); }
+        .card h4 { margin: 0 0 10px 0; font-size: 16px; color: var(--text-main); } 
+        .card p { margin: 8px 0; font-size: 13px; color: var(--text-muted); } 
+        .edit-badge { position: absolute; top: 18px; right: 18px; background: rgba(255,255,255,0.1); padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: 1px solid rgba(255,255,255,0.05); } 
+        .edit-badge:hover { background: var(--accent); color: white; border-color: var(--accent); transform: scale(1.05); }
+
+        .dropdown-container { position: relative; margin-bottom: 20px; }
+        .dropdown-list { position: absolute; top: calc(100% + 8px); left: 0; right: 0; background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; max-height: 250px; overflow-y: auto; display: none; z-index: 9999; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
+        .dropdown-item { padding: 14px 18px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); transition: all 0.2s; font-size: 14px; color: var(--text-main); font-weight: 500;} 
+        .dropdown-item:hover { background: var(--accent); color: white; padding-left: 24px; } 
+
+        .sub-tabs-container { overflow-x: auto; margin-bottom: 20px; border-radius: 14px; padding-bottom: 4px; }
+        .sub-tabs { display: flex; gap: 8px; background: rgba(0,0,0,0.3); padding: 6px; border: 1px solid rgba(255,255,255,0.05); min-width: max-content; border-radius: 14px;}
+        .sub-tab { flex: 1; padding: 10px 16px; border-radius: 10px; border: none; background: transparent; color: var(--text-muted); font-family: 'Outfit'; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.2s;} 
+        .sub-tab.active { background: var(--surface-hover); color: var(--text-main); box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);}
+
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px;}
+        .stat-box { background: rgba(0,0,0,0.3); padding: 22px 15px; border-radius: 18px; text-align: center; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .stat-box h3 { margin: 0; font-size: 34px; font-weight: 700; color: var(--text-main); }
+        .stat-box p { margin: 8px 0 0 0; font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;}
 
         .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 10000; justify-content: center; align-items: center; }
         .modal-content { background: var(--surface); padding: 35px; border-radius: 28px; width: 85%; max-width: 420px; max-height: 85vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 30px 60px rgba(0,0,0,0.8); }
         .modal-btns { display: flex; gap: 14px; margin-top: 25px;}
+
+        .status-badge { padding: 14px 20px; border-radius: 14px; text-align: center; font-size: 15px; font-weight: 500; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.08); display: none; background: rgba(0,0,0,0.3); box-shadow: inset 0 2px 5px rgba(0,0,0,0.2); }
+
+        #scrollToTopBtn { display: none; position: fixed; bottom: 20px; right: 20px; z-index: 999; background: linear-gradient(135deg, var(--accent), var(--accent-hover)); color: white; border: none; border-radius: 50%; width: 50px; height: 50px; cursor: pointer; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.5); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); align-items: center; justify-content: center; padding: 0; box-sizing: border-box; }
+        #scrollToTopBtn:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(59, 130, 246, 0.6); filter: brightness(1.1); }
+        #scrollToTopBtn:active { transform: translateY(0); }
+
+        .emp-dash-box { border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.3); padding: 18px; border-radius: 16px; margin-bottom: 14px; transition: all 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .emp-dash-box:hover { border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.02); }
+        .emp-dash-box h4 { margin: 0 0 12px 0; color: var(--accent); font-size: 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;}
+        .emp-dash-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; color: var(--text-muted);}
+        .emp-dash-row span { color: var(--text-main); font-weight: 500; }
+        .emp-dash-highlight { color: var(--success) !important; font-weight: 700 !important; font-size: 18px; text-shadow: 0 0 10px rgba(16, 185, 129, 0.3); }
+        .emp-dash-words { font-size: 12px; color: var(--text-muted); text-align:right; margin-top:-4px; margin-bottom: 10px; padding-right: 2px; font-style: italic; }
+
+        /* ⚠️ RESTORED HISTORY TABLE STYLES ⚠️ */
+        .history-table-container { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
+        .history-table-header { padding: 15px; background: rgba(59,130,246,0.1); border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .history-table-wrapper { overflow-x: auto; }
+        .history-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+        .history-table th { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); white-space: nowrap; color: var(--text-muted); background: rgba(255,255,255,0.05); }
+        .history-table td { padding: 10px; white-space: nowrap; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-main); }
+
+        #print-section { display: none; }
+        @media print { html, body { background: #ffffff !important; color: #000000 !important; } body > *:not(#print-section) { display: none !important; } #print-section { display: block !important; position: relative !important; width: 100% !important; margin: 0 !important; padding: 0 !important; background: #ffffff !important; } * { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; } @page { margin: 10mm; size: A4 portrait; } }
     </style>
 </head>
 <body>
+
+<div id="loader">
+    <img src="https://i.postimg.cc/C1fJDfZC/Capco-Logo.png?v=final" alt="Capco Logo">
+    <h3>SECURE CONNECTION</h3>
+</div>
 
 <div id="toast">
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
     <span id="toast-msg">Success!</span>
 </div>
 
-<div id="ai-loader">
-    <div class="spinner"></div>
-    <h2 id="ai-loader-text" style="font-weight: 500;">Loading Neural Networks...</h2>
-    <p style="color:var(--warning); font-size: 12px; margin-top: 5px;">This takes a few seconds on first load.</p>
-</div>
-
 <div id="login-container">
     <img src="https://i.postimg.cc/C1fJDfZC/Capco-Logo.png?v=final" alt="Capco Logo">
     <h2 style="margin:0 0 20px 0; font-weight: 600;">Security Portal</h2>
     <div style="display: flex; flex-direction: column; width: 100%;">
-        <input type="text" id="login-user" class="login-input" placeholder="User Name">
-        <input type="password" id="login-pass" class="login-input" placeholder="Password">
+        <input type="text" id="login-user" class="login-input" placeholder="User Name" onkeydown="if(event.key === 'Enter') document.getElementById('login-pass').focus();">
+        <input type="password" id="login-pass" class="login-input" placeholder="Password" onkeydown="if(event.key === 'Enter') handleLogin();">
         <button type="button" class="btn-main" id="btn-login-submit" onclick="handleLogin()">Login</button>
     </div>
     <p id="login-msg" style="color: var(--danger); font-size: 14px; margin-top:15px; font-weight: 500;"></p>
@@ -153,8 +202,8 @@
             <p style="text-align:center; color:var(--text-muted); font-size:15px; margin-bottom:20px;">Select action to activate camera</p>
             
             <div class="kiosk-grid">
-                <button class="kiosk-btn bg-in" onclick="startKioskMode('in')">Punch IN</button>
-                <button class="kiosk-btn bg-out" onclick="startKioskMode('out')">Punch OUT</button>
+                <button class="kiosk-btn btn-in" onclick="startKioskMode('in')">Punch IN</button>
+                <button class="kiosk-btn btn-out" onclick="startKioskMode('out')">Punch OUT</button>
             </div>
         </div>
 
@@ -170,13 +219,205 @@
     </div>
 
     <div id="view-entry" class="view-section active">
-        <h3 style="text-align:center;">Manual Entry Page</h3>
-        <p style="text-align:center; color:var(--text-muted);">We are fixing the Kiosk Colors and Help Menu first.</p>
-    </div>
-    
-    <div id="view-history" class="view-section"><p>History...</p></div>
-    <div id="view-admin" class="view-section"><p>Admin...</p></div>
+        <div class="dropdown-container">
+            <label>Select Employee</label>
+            <input type="text" id="empl-search-input" class="dropdown-input" placeholder="Search & tap to select..." autocomplete="off" onclick="openDropdown('empl-dropdown-list')" oninput="filterDropdown('empl-search-input', 'empl-dropdown-list', 'empl-selected-id')">
+            <input type="hidden" id="empl-selected-id">
+            <div id="empl-dropdown-list" class="dropdown-list"></div>
+        </div>
+        
+        <div class="dropdown-container" id="shift-select-container" style="display:none; margin-top:-10px;">
+            <label style="color: var(--accent);">Adjust Shift Timing (OT Staff)</label>
+            <select id="entry-shift-select" class="dropdown-input" style="padding: 14px; cursor: pointer;"></select>
+        </div>
 
+        <div id="live-status-badge" class="status-badge">Select an employee to check status</div>
+        <input type="hidden" id="current-empl-status">
+
+        <label>Action</label>
+        <div class="btn-grid">
+            <button class="btn-action bg-in" id="btn-in" onclick="submitAttendance('in')">Punch IN</button>
+            <button class="btn-action bg-out" id="btn-out" onclick="submitAttendance('out')">Punch OUT</button>
+            <button class="btn-action bg-perm" id="btn-perm" onclick="submitAttendance('permission')">Mark Permission</button>
+            <button class="btn-action bg-leave" id="btn-leave" onclick="submitAttendance('leave')">Mark Leave</button>
+        </div>
+        <label>Remarks (Optional)</label>
+        <input type="text" id="entry-remarks" placeholder="Add note...">
+    </div>
+
+    <div id="view-history" class="view-section">
+        <div style="display:flex; gap:15px;">
+            <div style="flex:1;"><label>Month</label><input type="month" id="hist-month"></div>
+            <div style="flex:1;"><label>Exact Date</label><input type="date" id="hist-date"></div>
+        </div>
+        <div class="dropdown-container">
+            <label>Filter Employee (Optional)</label>
+            <input type="text" id="hist-empl-search-input" class="dropdown-input" placeholder="Search & tap to select..." autocomplete="off" onclick="openDropdown('hist-empl-dropdown-list')" oninput="filterDropdown('hist-empl-search-input', 'hist-empl-dropdown-list', 'hist-empl-selected-id')">
+            <input type="hidden" id="hist-empl-selected-id">
+            <div id="hist-empl-dropdown-list" class="dropdown-list"></div>
+        </div>
+        <button class="btn-main" style="margin-top:0;" onclick="loadHistory()">Search Records</button>
+        <div id="history-results" style="margin-top:25px; max-height: 45vh; overflow-y:auto; padding-right:8px;"></div>
+    </div>
+
+    <div id="view-admin" class="view-section">
+        <div class="sub-tabs-container">
+            <div class="sub-tabs">
+                <button class="sub-tab active" id="sub-btn-dash" onclick="switchAdminSubTab('dash')">Dashboard</button>
+                <button class="sub-tab" id="sub-btn-empdash" onclick="switchAdminSubTab('empdash')">Emp Dash</button>
+                <button class="sub-tab" id="sub-btn-leave" onclick="switchAdminSubTab('leave')">Leaves</button>
+                <button class="sub-tab" id="sub-btn-empl" onclick="switchAdminSubTab('empl')">Employees</button>
+                <button class="sub-tab" id="sub-btn-user" onclick="switchAdminSubTab('user')">Users</button>
+            </div>
+        </div>
+
+        <div id="admin-dash-section">
+            <h3 style="margin-top:0; color:var(--text-main);">Today's Overview</h3>
+            <div class="stats-grid">
+                <div class="stat-box"><h3 id="dash-total">--</h3><p>Total Staff</p></div>
+                <div class="stat-box"><h3 id="dash-present" style="color:var(--success);">--</h3><p>Present</p></div>
+                <div class="stat-box" style="border-left: 3px solid var(--success);"><h3 id="dash-in">--</h3><p>Currently IN</p></div>
+                <div class="stat-box" style="border-left: 3px solid var(--border);"><h3 id="dash-out">--</h3><p>Punched OUT</p></div>
+                <div class="stat-box" style="border-left: 3px solid var(--danger);"><h3 id="dash-leave" style="color:var(--danger);">--</h3><p>On Leave</p></div>
+                <div class="stat-box" style="border-left: 3px solid var(--warning);"><h3 id="dash-late" style="color:var(--warning);">--</h3><p>Late Arrivals</p></div>
+            </div>
+            <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; margin-top: 10px;">
+                <label>Export Monthly Data to CSV</label>
+                <div style="display:flex; gap:10px;">
+                    <input type="month" id="export-month" style="margin-bottom:0;">
+                    <button class="btn-main" style="margin-top:0;" onclick="downloadCSV()">Export CSV</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="admin-empdash-section" style="display:none;">
+            <h3 style="margin-top:0; color:var(--text-main);">Monthly Salary Engine</h3>
+            <label>Select Month</label><input type="month" id="empdash-month">
+            <div class="dropdown-container">
+                <label>Select Employee</label>
+                <input type="text" id="empdash-search" class="dropdown-input" placeholder="Search & tap to select..." autocomplete="off" onclick="openDropdown('empdash-dropdown-list')" oninput="filterDropdown('empdash-search', 'empdash-dropdown-list', 'empdash-id')">
+                <input type="hidden" id="empdash-id">
+                <div id="empdash-dropdown-list" class="dropdown-list"></div>
+            </div>
+            <button class="btn-main" style="margin-top:0;" onclick="generateEmpDash()">Generate Report</button>
+            <div id="empdash-results" style="margin-top:25px; padding-bottom: 20px;"></div>
+        </div>
+
+        <div id="admin-leave-section" style="display:none;">
+            <h3 style="margin-top:0; color:var(--text-main);">Assign Leave</h3>
+            <div class="dropdown-container">
+                <label>Select Employee</label>
+                <input type="text" id="leave-empl-search" class="dropdown-input" placeholder="Search & tap to select..." autocomplete="off" onclick="openDropdown('leave-empl-dropdown')" oninput="filterDropdown('leave-empl-search', 'leave-empl-dropdown', 'leave-empl-id')">
+                <input type="hidden" id="leave-empl-id">
+                <div id="leave-empl-dropdown" class="dropdown-list"></div>
+            </div>
+            <label>Leave Date</label><input type="date" id="leave-date">
+            <label>Reason / Remarks</label><input type="text" id="leave-remarks" placeholder="e.g., Annual Leave, Sick Leave">
+            <button class="btn-main" style="margin-top:0; background: var(--danger); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);" onclick="submitAdminLeave()">Mark as Leave</button>
+        </div>
+
+        <div id="admin-empl-section" style="display:none;">
+            <h3 style="margin-top:0; color:var(--text-main);">Employee Master Data</h3>
+            
+            <div id="enrollment-camera-view" style="display:none; margin-bottom: 20px; text-align:center;">
+                <div class="video-container" id="enroll-video-container" style="display:block;">
+                    <video id="enroll-video" autoplay muted playsinline></video>
+                </div>
+                <div id="enroll-status" class="status-loading" style="display:block;">Position face in camera...</div>
+                <button class="btn-main" style="background:var(--danger); margin-top:10px;" onclick="stopEnrollment()">Cancel Enrollment</button>
+            </div>
+
+            <div id="admin-empl-container">
+                <div style="display:flex; gap:12px;">
+                    <button class="btn-main" style="margin-top:0; margin-bottom:15px; background: var(--success); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);" onclick="openEmplModal()">+ Add New</button>
+                    <button class="btn-main" style="margin-top:0; margin-bottom:15px; background: transparent; border: 2px solid var(--accent); color: var(--accent); box-shadow: none;" onclick="openBulkModal()">Bulk Add</button>
+                </div>
+                <input type="text" id="search-admin-empl" class="search-bar" placeholder="🔍 Search Employee list..." onkeyup="filterAdminCards('admin-empl-list', this.value)">
+                <div id="admin-empl-list" style="max-height: 40vh; overflow-y:auto; margin-bottom:15px; padding-right:8px;"></div>
+            </div>
+        </div>
+
+        <div id="admin-user-section" style="display:none;">
+            <button class="btn-main" style="margin-top:0; margin-bottom:15px; background: var(--success); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);" onclick="openUserModal()">+ Add New App User</button>
+            <input type="text" id="search-admin-user" class="search-bar" placeholder="🔍 Search User list..." onkeyup="filterAdminCards('admin-users-list', this.value)">
+            <div id="admin-users-list" style="max-height: 35vh; overflow-y:auto; margin-bottom:15px; padding-right:8px;"></div>
+        </div>
+    </div>
+</div>
+
+<div id="print-section"></div>
+
+<div class="modal" id="edit-att-modal">
+    <div class="modal-content">
+        <h3 style="margin-top:0; color: var(--text-main); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">Edit Record (Audited)</h3>
+        <input type="hidden" id="edit-att-row">
+        <label>In Time (HH:mm)</label><input type="time" id="edit-att-in">
+        <label>Out Time (HH:mm)</label><input type="time" id="edit-att-out">
+        <label>Perm Out (HH:mm)</label><input type="time" id="edit-att-perm">
+        <label>Remarks</label><input type="text" id="edit-att-rem" placeholder="Add edit reason...">
+        <div class="modal-btns">
+            <button class="btn-main" style="background:transparent; border: 2px solid rgba(255,255,255,0.2); box-shadow: none;" onclick="closeModals()">Cancel</button>
+            <button class="btn-main" onclick="saveAdminAtt()">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="bulk-empl-modal">
+    <div class="modal-content" style="max-width: 450px;">
+        <h3 style="margin-top:0; color: var(--text-main); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">Bulk Add Employees</h3>
+        <label>Format: ID, Name, Shift, Category, LeaveBalance</label>
+        <textarea id="bulk-csv-input" placeholder="247, Prasanna, REGULAR, Staff Without OT, 0" style="min-height: 150px; font-family: monospace;"></textarea>
+        <div class="modal-btns">
+            <button class="btn-main" style="background:transparent; border: 2px solid rgba(255,255,255,0.2); box-shadow: none;" onclick="closeModals()">Cancel</button>
+            <button class="btn-main" style="background: var(--success); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);" onclick="saveBulkEmpl()">Upload List</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="edit-empl-modal">
+    <div class="modal-content">
+        <h3 style="margin-top:0; color: var(--text-main); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;" id="empl-modal-title">Employee Details</h3>
+        <input type="hidden" id="empl-row">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+            <div><label>ID</label><input type="text" id="empl-id"></div>
+            <div><label>Name</label><input type="text" id="empl-name"></div>
+            <div><label>Shift</label><select id="empl-shift"></select></div>
+            <div><label>Category</label><select id="empl-category"><option value="Staff Without OT">Staff Without OT</option><option value="Staff With OT">Staff With OT</option><option value="Staff With SOT">Staff With SOT</option></select></div>
+            <div><label>Leave Bal</label><input type="number" step="0.5" id="empl-leavebal"></div>
+            <div><label>PIN (Optional)</label><input type="number" id="empl-pin"></div>
+            <div><label>Gross Salary</label><input type="number" id="empl-gross"></div>
+            <div><label>Basic</label><input type="number" id="empl-basic"></div>
+            <div><label>HRA</label><input type="number" id="empl-hra"></div>
+            <div><label>Conveyance</label><input type="number" id="empl-conv"></div>
+            <div><label>Spl Allow.</label><input type="number" id="empl-spl"></div>
+            <div><label>Medical</label><input type="number" id="empl-med"></div>
+            <div><label>E.S.I</label><input type="number" id="empl-esi"></div>
+            <div><label>PF</label><input type="number" id="empl-pf"></div>
+            <div><label>VPF</label><input type="number" id="empl-vpf"></div>
+            <div><label>PT</label><input type="number" id="empl-pt"></div>
+        </div>
+        <div class="modal-btns">
+            <button class="btn-main" style="background:transparent; border: 2px solid rgba(255,255,255,0.2); box-shadow: none;" onclick="closeModals()">Cancel</button>
+            <button class="btn-main" style="background:var(--danger); display:none;" id="btn-del-empl" onclick="deleteAdminEmpl()">Delete</button>
+            <button class="btn-main" onclick="saveAdminEmpl()">Save</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="edit-user-modal">
+    <div class="modal-content">
+        <h3 style="margin-top:0; color: var(--text-main); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;" id="user-modal-title">User details</h3>
+        <input type="hidden" id="user-row">
+        <label>User Name</label><input type="text" id="user-name">
+        <label>Role <span style="font-size: 11px; color: var(--warning);">(Admin, HR, Security, Standby)</span></label><input type="text" id="user-role">
+        <label>Email</label><input type="text" id="user-email">
+        <label>Password</label><input type="text" id="user-pass">
+        <div class="modal-btns">
+            <button class="btn-main" style="background:transparent; border: 2px solid rgba(255,255,255,0.2); box-shadow: none;" onclick="closeModals()">Cancel</button>
+            <button class="btn-main" style="background:var(--danger); display:none;" id="btn-del-user" onclick="deleteAdminUser()">Delete</button>
+            <button class="btn-main" onclick="saveAdminUser()">Save</button>
+        </div>
+    </div>
 </div>
 
 <div class="modal" id="tutorial-modal">
@@ -188,6 +429,9 @@
     </div>
 </div>
 
+<button id="scrollToTopBtn" onclick="scrollToTop()" title="Go to top">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+</button>
 
 <script>
     // ⚠️ PASTE YOUR GOOGLE API URL HERE ⚠️
@@ -196,7 +440,8 @@
     let currentUser = { username: '', role: '' };
     let employeeList = []; let shiftsData = []; let historyData = []; let adminUsersCache = [];
     let modelsLoaded = false; let faceMatcher = null; let kioskInterval = null; let kioskTimer = null;
-    let currentAction = 'in'; let recentlyPunched = []; 
+    let currentAction = 'in'; let recentlyPunched = []; let currentPayslipHTML = ""; 
+    let activeEnrollId = null;
 
     if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(err => console.log('SW bypassed.')); }
 
@@ -205,6 +450,14 @@
         document.getElementById('toast-msg').innerText = msg;
         toast.classList.add('show');
         setTimeout(() => toast.classList.remove('show'), 4000);
+    }
+
+    function playSuccessSound(name, actionStr) {
+        if ('speechSynthesis' in window) {
+            let utterance = new SpeechSynthesisUtterance(`Thank you, ${name}. Punch ${actionStr} successful.`);
+            utterance.rate = 1.0;
+            window.speechSynthesis.speak(utterance);
+        }
     }
 
     async function callGoogleAPI(payload) {
@@ -225,12 +478,28 @@
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.getElementById('view-' + tabId).classList.add('active');
         if(el) el.classList.add('active');
+        if(tabId === 'admin') switchAdminSubTab('dash');
     }
 
     function updateLiveClock() { 
         var clockEl = document.getElementById('live-clock'); if(!clockEl) return;
         try { clockEl.innerText = new Date().toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }) + " | " + new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }); } 
         catch(e) { clockEl.innerText = new Date().toLocaleString(); }
+    }
+
+    function applyRolePermissions() {
+        document.getElementById('tab-admin').style.display = (currentUser.role === 'Admin' || currentUser.role === 'HR') ? 'block' : 'none';
+        document.getElementById('sub-btn-user').style.display = (currentUser.role === 'Admin') ? 'block' : 'none';
+        
+        if (currentUser.role === 'Standby') {
+            document.getElementById('app-tabs').style.display = 'none'; 
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById('view-kiosk').classList.add('active'); 
+        } else {
+            document.getElementById('app-tabs').style.display = 'flex';
+            document.getElementById('btn-leave').style.display = (currentUser.role === 'Admin' || currentUser.role === 'HR') ? 'block' : 'none'; 
+            document.getElementById('btn-perm').style.gridColumn = (currentUser.role === 'Admin' || currentUser.role === 'HR') ? 'auto' : 'span 2'; 
+        }
     }
 
     function startApp() {
@@ -241,20 +510,14 @@
                 document.getElementById('display-user').innerText = `Logged in as: ${currentUser.username} (${currentUser.role})`;
                 document.getElementById('login-container').style.display = 'none';
                 document.getElementById('main-app').style.display = 'block';
-                
-                if (currentUser.role === 'Standby') {
-                    document.getElementById('app-tabs').style.display = 'none'; 
-                    document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-                    document.getElementById('view-kiosk').classList.add('active'); 
-                } else {
-                    document.getElementById('app-tabs').style.display = 'flex';
-                }
+                applyRolePermissions();
+                fetchDataAndInitializeAI();
             } catch(e) { safeRemove('capco_attendance_user'); }
         }
     }
 
     async function handleLogin() {
-        if(GOOGLE_API_URL === "YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE") return alert("Developer Error: Add API URL on line 348");
+        if(GOOGLE_API_URL === "YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE") return alert("Developer Error: Add API URL on line 369");
         const u = document.getElementById('login-user').value.trim();
         const p = document.getElementById('login-pass').value.trim();
         const btn = document.getElementById('btn-login-submit');
@@ -272,37 +535,308 @@
     function logout() {
         safeRemove('capco_attendance_user'); currentUser = { username: '', role: '' };
         document.getElementById('login-user').value = ''; document.getElementById('login-pass').value = ''; document.getElementById('main-app').style.display = 'none'; document.getElementById('login-container').style.display = 'block';
-        switchTab('entry');
+        stopKioskMode(); stopEnrollment(); switchTab('entry');
     }
 
-    // ⚠️ FIXED: Dynamic Help Guide Logic ⚠️
+    // --- AI & DATA INIT ---
+    async function fetchDataAndInitializeAI() {
+        document.getElementById('network-status').innerText = '🔄 Syncing...'; document.getElementById('network-status').style.color = 'var(--accent)';
+        const data = await callGoogleAPI({ action: 'getInitData' });
+        if(data && data.employees) {
+            employeeList = data.employees; shiftsData = data.shifts;
+            populateDropdowns(data.employees); safeSet('capco_empl_cache', JSON.stringify(data.employees)); safeSet('capco_shifts_cache', JSON.stringify(data.shifts));
+            document.getElementById('network-status').innerText = '🟢 Online'; document.getElementById('network-status').style.color = 'var(--success)';
+            
+            try {
+                const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
+                await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+                await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+                await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+                modelsLoaded = true; buildFaceMatcher();
+            } catch (error) { console.error("AI Models failed to load"); }
+        }
+    }
+
+    function buildFaceMatcher() {
+        const labeledDescriptors = [];
+        employeeList.forEach(emp => {
+            if (emp.faceData && emp.faceData !== '') {
+                try {
+                    const floatArr = new Float32Array(JSON.parse(emp.faceData));
+                    labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(emp.id.toString(), [floatArr]));
+                } catch(e) {}
+            }
+        });
+        faceMatcher = labeledDescriptors.length > 0 ? new faceapi.FaceMatcher(labeledDescriptors, 0.55) : null; 
+    }
+
+    // --- KIOSK LOGIC ---
+    async function startKioskMode(action) {
+        if(!modelsLoaded) return alert("AI is still loading...");
+        if(!faceMatcher) return alert("No employees have been enrolled yet! Go to Admin tab first.");
+        currentAction = action; recentlyPunched = []; 
+        document.getElementById('kiosk-home').style.display = 'none'; document.getElementById('kiosk-camera-view').style.display = 'block'; document.getElementById('kiosk-action-title').innerText = `Punch ${action.toUpperCase()}`;
+        const video = document.getElementById('kiosk-video'); const status = document.getElementById('ai-status'); const timerDiv = document.getElementById('timer-display');
+        document.getElementById('video-container').style.display = 'block'; status.style.display = 'block'; status.className = 'status-loading'; status.innerText = "Starting Camera..."; timerDiv.style.display = 'block';
+
+        try {
+            video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+            video.onplay = () => {
+                startKioskTimer(); 
+                kioskInterval = setInterval(async () => {
+                    try {
+                        const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.4 })).withFaceLandmarks().withFaceDescriptor();
+                        if (detection) {
+                            const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
+                            if (bestMatch.label !== 'unknown') {
+                                const empId = bestMatch.label;
+                                if (!recentlyPunched.includes(empId)) {
+                                    recentlyPunched.push(empId); const emp = employeeList.find(e => e.id == empId);
+                                    status.className = 'status-success'; status.innerText = `Recognized: ${emp.name}! Logging...`;
+                                    timeLeft = 120; timerDiv.innerText = timeLeft; 
+                                    
+                                    const res = await callGoogleAPI({ action: 'logAttendance', emplId: emp.id, emplName: emp.name, type: currentAction, remarks: 'AI Camera', loggedByUser: 'Kiosk', offlineTimeIso: null, selectedShift: emp.shift });
+                                    if(res.status === 'success') {
+                                        showToast(`${emp.name} Punched ${currentAction.toUpperCase()}`);
+                                        playSuccessSound(emp.name, currentAction.toUpperCase()); 
+                                        status.innerText = res.message;
+                                        setTimeout(() => { status.className = 'status-loading'; status.innerText = "Ready for next person..."; }, 3500);
+                                    } else { status.className = 'status-error'; status.innerText = "Error: " + res.message; }
+                                }
+                            } else { status.className = 'status-error'; status.innerText = "Face not recognized. Move closer."; }
+                        } else { status.className = 'status-loading'; status.innerText = "Looking for a face..."; }
+                    } catch (err) {}
+                }, 800); 
+            };
+        } catch(e) { status.className = 'status-error'; status.innerText = "Camera Error: " + e.message; }
+    }
+
+    let timeLeft = 120; 
+    function startKioskTimer() { timeLeft = 120; document.getElementById('timer-display').innerText = timeLeft; kioskTimer = setInterval(() => { timeLeft--; document.getElementById('timer-display').innerText = timeLeft; if(timeLeft <= 0) stopKioskMode(); }, 1000); }
+    function stopKioskMode() { clearInterval(kioskInterval); clearInterval(kioskTimer); const video = document.getElementById('kiosk-video'); if(video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); } document.getElementById('kiosk-camera-view').style.display = 'none'; document.getElementById('video-container').style.display = 'none'; document.getElementById('ai-status').style.display = 'none'; document.getElementById('timer-display').style.display = 'none'; document.getElementById('kiosk-home').style.display = 'block'; }
+
+    // --- ENROLLMENT LOGIC ---
+    function renderEnrollmentList() {
+        let html = '';
+        employeeList.forEach((emp, idx) => {
+            let hasFace = (emp.faceData && emp.faceData !== '') ? '<span style="color:var(--success); font-size:12px;">✅ Enrolled</span>' : '<span style="color:var(--danger); font-size:12px;">❌ Not Enrolled</span>';
+            html += `<div class="card"><div class="edit-badge" onclick="openEmplModal(${idx})">Edit</div><div><h4 style="margin-bottom:6px;">${emp.name} (${emp.id})</h4><div style="display:flex; gap:15px; font-size:13px; color:var(--text-muted); margin-bottom:12px;"><span>Shift: <b style="color:white">${emp.shift}</b></span><span>Bal: <b style="color:white">${emp.leaveBal}</b></span></div>${hasFace}</div><button class="btn-main" style="width:100%; margin-top:12px; padding:12px; font-size:14px;" onclick="startEnrollment('${emp.id}')">📸 Enroll Face</button></div>`;
+        });
+        document.getElementById('admin-empl-list').innerHTML = html;
+    }
+
+    async function startEnrollment(empId) {
+        if(!modelsLoaded) return alert("AI is still loading...");
+        activeEnrollId = empId; document.getElementById('admin-empl-container').style.display = 'none'; document.getElementById('enrollment-camera-view').style.display = 'block';
+        const video = document.getElementById('enroll-video'); const status = document.getElementById('enroll-status'); status.className = 'status-loading'; status.innerText = "Starting Camera...";
+        try {
+            video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+            status.innerText = "Looking for face... Please look directly at the camera.";
+            video.onplay = async () => {
+                const scanInterval = setInterval(async () => {
+                    try {
+                        const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.4 })).withFaceLandmarks().withFaceDescriptor();
+                        if (detection) {
+                            clearInterval(scanInterval); status.className = 'status-success'; status.innerText = "Face Captured! Saving...";
+                            const dataString = JSON.stringify(Array.from(detection.descriptor));
+                            const res = await callGoogleAPI({ action: 'saveFaceData', emplId: activeEnrollId, faceDataStr: dataString });
+                            if(res.status === 'success') {
+                                status.innerText = "Saved Successfully!"; showToast("Face Enrolled Successfully");
+                                let emp = employeeList.find(e => e.id == activeEnrollId); if(emp) emp.faceData = dataString;
+                                buildFaceMatcher(); setTimeout(stopEnrollment, 1500);
+                            } else { status.className = 'status-error'; status.innerText = "Save Failed: " + res.message; }
+                        }
+                    } catch(err) {}
+                }, 500);
+            };
+        } catch(e) { status.className = 'status-error'; status.innerText = "Camera Error: " + e.message; }
+    }
+    function stopEnrollment() { const video = document.getElementById('enroll-video'); if(video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); } document.getElementById('enrollment-camera-view').style.display = 'none'; document.getElementById('admin-empl-container').style.display = 'block'; activeEnrollId = null; renderEnrollmentList(); }
+
+    // --- MANUAL ENTRY LOGIC ---
+    function openDropdown(listId) { document.querySelectorAll('.dropdown-list').forEach(l => l.style.display='none'); document.getElementById(listId).style.display = 'block'; }
+    function filterDropdown(inputId, listId, hiddenId) { const filter = document.getElementById(inputId).value.toLowerCase(); const list = document.getElementById(listId); const items = list.getElementsByClassName('dropdown-item'); let hasVisible = false; list.style.display = 'block'; for(let i=0; i<items.length; i++) { if (items[i].innerText.toLowerCase().includes(filter)) { items[i].style.display = 'block'; hasVisible = true; } else { items[i].style.display = 'none'; } } if(!hasVisible) list.style.display = 'none'; document.getElementById(hiddenId).value = ''; if(listId === 'empl-dropdown-list') document.getElementById('live-status-badge').style.display = 'none'; }
+    function populateDropdowns(data) { const listEntry = document.getElementById('empl-dropdown-list'); const listHist = document.getElementById('hist-empl-dropdown-list'); const listLeave = document.getElementById('leave-empl-dropdown'); const listEmpDash = document.getElementById('empdash-dropdown-list'); listEntry.innerHTML = ''; listHist.innerHTML = ''; listLeave.innerHTML = ''; listEmpDash.innerHTML = ''; data.forEach(e => { const text = `${e.id} - ${e.name}`; let div = `<div class="dropdown-item" onclick="chooseEntry('${e.id}', '${text}')">${text}</div>`; listEntry.innerHTML += div; listHist.innerHTML += `<div class="dropdown-item" onclick="chooseHist('${e.id}', '${text}')">${text}</div>`; listLeave.innerHTML += `<div class="dropdown-item" onclick="chooseLeave('${e.id}', '${text}')">${text}</div>`; listEmpDash.innerHTML += `<div class="dropdown-item" onclick="chooseEmpDash('${e.id}', '${text}')">${text}</div>`; }); }
+    
+    function chooseEntry(id, text) { document.getElementById('empl-search-input').value = text; document.getElementById('empl-selected-id').value = id; document.getElementById('empl-dropdown-list').style.display = 'none'; const emp = employeeList.find(e => e.id.toString() === id.toString()); if (emp && emp.category === 'Staff With OT') { document.getElementById('shift-select-container').style.display = 'block'; document.getElementById('entry-shift-select').innerHTML = shiftsData.map(s => `<option value="${s.name}" ${s.name === emp.shift ? 'selected' : ''}>${s.name} (${s.start}-${s.end})</option>`).join(''); } else { document.getElementById('shift-select-container').style.display = 'none'; } fetchLiveStatus(id); }
+    function chooseHist(id, text) { document.getElementById('hist-empl-search-input').value = text; document.getElementById('hist-empl-selected-id').value = id; document.getElementById('hist-empl-dropdown-list').style.display = 'none'; }
+    function chooseLeave(id, text) { document.getElementById('leave-empl-search').value = text; document.getElementById('leave-empl-id').value = id; document.getElementById('leave-empl-dropdown').style.display = 'none'; }
+    function chooseEmpDash(id, text) { document.getElementById('empdash-search').value = text; document.getElementById('empdash-id').value = id; document.getElementById('empdash-dropdown-list').style.display = 'none'; }
+    document.addEventListener('click', function(e) { if (!e.target.closest('.dropdown-container')) { document.querySelectorAll('.dropdown-list').forEach(l => l.style.display='none'); } });
+
+    async function fetchLiveStatus(id) {
+        const badge = document.getElementById('live-status-badge'); badge.style.display = 'block'; badge.innerText = 'Checking status...'; badge.style.color = "var(--text-muted)";
+        const res = await callGoogleAPI({ action: 'getEmployeeStatus', emplId: id });
+        if(res.status) { badge.innerText = res.msg; document.getElementById('current-empl-status').value = res.status; if(res.status === 'IN') badge.style.color = "var(--success)"; else if(res.status === 'OUT') badge.style.color = "var(--text-main)"; else if(res.status === 'LEAVE') badge.style.color = "var(--danger)"; else badge.style.color = "var(--warning)"; }
+    }
+
+    async function submitAttendance(action) {
+        try {
+            const emplId = document.getElementById('empl-selected-id').value; const currentStatus = document.getElementById('current-empl-status').value; const remarks = document.getElementById('entry-remarks').value; const status = document.getElementById('entry-status');
+            if(!emplId) { status.style.color = 'var(--danger)'; status.innerText = 'Please select an employee!'; return; }
+            if (action === 'in' && currentStatus === 'IN') { status.style.color = 'var(--danger)'; status.innerText = 'Employee is already IN.'; return; }
+            if (action === 'out' && (currentStatus === 'OUT' || currentStatus === 'NONE')) { status.style.color = 'var(--danger)'; status.innerText = 'Cannot punch out before punching in.'; return; }
+            
+            const emp = employeeList.find(e => e.id.toString() === emplId.toString());
+            let selectedShift = emp.shift || 'REGULAR'; 
+            if (emp.category === 'Staff With OT') {
+                const shiftSelect = document.getElementById('entry-shift-select');
+                if(shiftSelect && shiftSelect.value) selectedShift = shiftSelect.value;
+            }
+            
+            if(!navigator.onLine) {
+                let pending = JSON.parse(safeGet('capco_pending_punches') || '[]');
+                pending.push({ emplId: emp.id, emplName: emp.name, action: action, remarks: remarks, loggedByUser: currentUser.username, timestamp: new Date().toISOString(), shift: selectedShift });
+                safeSet('capco_pending_punches', JSON.stringify(pending));
+                showToast("Saved Offline"); document.getElementById('entry-remarks').value = ''; document.getElementById('empl-search-input').value = ''; document.getElementById('empl-selected-id').value = ''; document.getElementById('live-status-badge').style.display = 'none';
+                return;
+            }
+
+            status.style.color = 'var(--text-muted)'; status.innerText = 'Recording...';
+            const res = await callGoogleAPI({ action: 'logAttendance', emplId: emp.id, emplName: emp.name, type: action, remarks: remarks, loggedByUser: currentUser.username, offlineTimeIso: null, selectedShift: selectedShift });
+            if(res.status === 'success') {
+                showToast(`${emp.name} logged ${action.toUpperCase()} successfully.`); playSuccessSound(emp.name, action.toUpperCase());
+                document.getElementById('entry-remarks').value = ''; document.getElementById('empl-search-input').value = ''; document.getElementById('empl-selected-id').value = ''; document.getElementById('live-status-badge').style.display = 'none'; document.getElementById('shift-select-container').style.display = 'none'; status.innerText = '';
+                fetchDataAndInitializeAI();
+            } else { status.style.color = 'var(--danger)'; status.innerText = 'Error: ' + res.message; }
+        } catch(err) { alert("Error logging punch. Please refresh and try again."); }
+    }
+
+    async function hardRefreshApp(event) {
+        if(event) { var btn = event.currentTarget.querySelector('svg'); btn.style.transition = 'transform 0.5s ease'; btn.style.transform = 'rotate(360deg)'; setTimeout(() => { btn.style.transform = 'none'; btn.style.transition = 'none'; }, 500); }
+        if(navigator.onLine) {
+            document.getElementById('network-status').innerText = '🔄 Syncing...';
+            const data = await callGoogleAPI({ action: 'getInitData' });
+            if(data && data.employees) {
+                employeeList = data.employees; shiftsData = data.shifts; populateDropdowns(data.employees); safeSet('capco_empl_cache', JSON.stringify(data.employees)); safeSet('capco_shifts_cache', JSON.stringify(data.shifts));
+                var activeTab = document.querySelector('.view-section.active').id;
+                if(activeTab === 'view-history') loadHistory(); else if(activeTab === 'view-admin') { var sub = document.querySelector('.sub-tab.active').id; if(sub === 'sub-btn-dash') loadDashboard(); }
+                document.getElementById('network-status').innerText = '🟢 Online'; document.getElementById('network-status').style.color = 'var(--success)';
+            }
+        }
+    }
+
+    // --- ADMIN VIEWS ---
+    function switchAdminSubTab(subTabName) { if (subTabName === 'user' && currentUser.role !== 'Admin') return; document.querySelectorAll('.sub-tab').forEach(e => e.classList.remove('active')); document.getElementById('sub-btn-' + subTabName).classList.add('active'); ['dash','empdash','leave','empl','user'].forEach(s => document.getElementById('admin-'+s+'-section').style.display = 'none'); document.getElementById('admin-'+subTabName+'-section').style.display = 'block'; if (subTabName === 'dash') loadDashboard(); else if (subTabName === 'empl') loadAdminEmplData(); else if (subTabName === 'user') loadAdminUsersData(); }
+    
+    async function loadDashboard() { const stats = await callGoogleAPI({action: 'getDashboardStats'}); if(stats.total) { document.getElementById('dash-total').innerText = stats.total; document.getElementById('dash-present').innerText = stats.present; document.getElementById('dash-in').innerText = stats.inNow; document.getElementById('dash-out').innerText = stats.outNow; document.getElementById('dash-leave').innerText = stats.leave; document.getElementById('dash-late').innerText = stats.late; } }
+
+    function numberToWords(num) {
+        if (num === 0) return 'Zero Only'; var a = ['','One ','Two ','Three ','Four ', 'Five ','Six ','Seven ','Eight ','Nine ','Ten ','Eleven ','Twelve ','Thirteen ','Fourteen ','Fifteen ','Sixteen ','Seventeen ','Eighteen ','Nineteen ']; var b = ['', '', 'Twenty ','Thirty ','Forty ','Fifty ', 'Sixty ','Seventy ','Eighty ','Ninety ']; var n = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/); if (!n) return ''; var str = ''; str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + a[n[1][1]]) + 'Crore ' : ''; str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + a[n[2][1]]) + 'Lakh ' : ''; str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + a[n[3][1]]) + 'Thousand ' : ''; str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + a[n[4][1]]) + 'Hundred ' : ''; str += (n[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + a[n[5][1]]) + 'Only' : 'Only'; return str.trim();
+    }
+
+    async function generateEmpDash() {
+        const m = document.getElementById('empdash-month').value; const id = document.getElementById('empdash-id').value; const resDiv = document.getElementById('empdash-results');
+        if(!m || !id) return resDiv.innerHTML = '<p style="color:var(--danger); text-align:center;">Please select an Employee and Month.</p>';
+        resDiv.innerHTML = '<p style="color:var(--text-muted); text-align:center;">Fetching Payroll Data...</p>';
+        const data = await callGoogleAPI({action: 'getEmpDashData', emplId: id, month: m});
+        if(data.status === 'error') return resDiv.innerHTML = `<p style="color:var(--danger); text-align:center;">${data.message}</p>`;
+        
+        let roundedNet = Math.round(data.netPay); let wordsNet = numberToWords(roundedNet);
+        resDiv.innerHTML = `<div class="emp-dash-box" style="border-color: var(--accent);"><h4>🧑‍💼 ${data.emplName} <span style="float:right; font-size:12px; color:var(--text-muted); font-weight:400;">(${data.category})</span></h4><div class="emp-dash-row">Leave Balance: <span>${data.leaveBal}</span></div><div class="emp-dash-row">Month: <span>${data.month}</span></div></div><div class="emp-dash-box"><h4>📅 Attendance Summary</h4><div class="emp-dash-row">Present Days: <span style="color:var(--success);">${data.present}</span></div><div class="emp-dash-row">Leaves Taken: <span style="color:var(--danger);">${data.leaves}</span></div><div class="emp-dash-row">Public Holidays / Sun: <span>${data.ph}</span></div><div class="emp-dash-row" style="border-top:1px solid rgba(255,255,255,0.1); padding-top:5px;">Total Payable Days: <span>${data.payableDays}</span></div></div>${(data.category === 'Staff With OT' || data.category === 'Staff With SOT') ? `<div class="emp-dash-box"><h4>⏱️ Overtime Engine</h4><div class="emp-dash-row">Extra Hours: <span>${data.extraHours} hrs</span></div><div class="emp-dash-row">Per Hour Rate: <span>₹${data.perHour.toFixed(2)}</span></div><div class="emp-dash-row">OT Earnings: <span style="color:var(--success);">+ ₹${data.otEarnings.toFixed(2)}</span></div></div>` : ''}<div class="emp-dash-box"><h4>💸 Salary Breakdown</h4><div class="emp-dash-row">Fixed Gross: <span>₹${data.actualGross.toLocaleString('en-IN')}</span></div><div class="emp-dash-row">Prorated Gross: <span>₹${data.gross.toLocaleString('en-IN')}</span></div><div class="emp-dash-row" style="font-size:12px; color:var(--text-muted);">Basic: ₹${data.basic.toLocaleString('en-IN')} | HRA: ₹${data.hra.toLocaleString('en-IN')}</div><div class="emp-dash-row" style="font-size:12px; color:var(--text-muted);">Conv: ₹${data.conv.toLocaleString('en-IN')} | Spl: ₹${data.spl.toLocaleString('en-IN')} | Med: ₹${data.med.toLocaleString('en-IN')}</div></div><div class="emp-dash-box"><h4>📉 Deductions</h4><div class="emp-dash-row" style="font-size:12px; color:var(--text-muted);">ESI: ₹${data.esi.toLocaleString('en-IN')} | PF: ₹${data.pf.toLocaleString('en-IN')}</div><div class="emp-dash-row" style="font-size:12px; color:var(--text-muted);">VPF: ₹${data.vpf.toLocaleString('en-IN')} | PT: ₹${data.pt.toLocaleString('en-IN')}</div><div class="emp-dash-row" style="border-top:1px solid rgba(255,255,255,0.1); padding-top:5px; margin-top:5px;">Total Deductions: <span style="color:var(--danger);">- ₹${data.deductions.toLocaleString('en-IN')}</span></div></div><div class="emp-dash-box" style="background: rgba(16, 185, 129, 0.1); border-color: var(--success); margin-bottom: 5px;"><div class="emp-dash-row" style="margin-bottom:0;"><span style="font-size: 16px;">NET PAYOUT</span><span class="emp-dash-highlight">₹${roundedNet.toLocaleString('en-IN')}</span></div></div><div class="emp-dash-words">(Rupees ${wordsNet})</div><button class="btn-main" style="background: #2563eb; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);" onclick="downloadPayslip()">🖨️ Download PDF Payslip</button>`;
+        
+        currentPayslipHTML = `<div style="font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; padding: 20px; color: #333; max-width: 800px; margin: 0 auto; background: white;"><div style="display: flex; justify-content: space-between; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 20px; align-items: center;"><div><img src="https://i.postimg.cc/C1fJDfZC/Capco-Logo.png?v=final" alt="Capco Logo" style="height: 55px; width: auto; margin-bottom: 12px; display:block;"><div style="font-size:14px; color:#666; margin-top:5px;">Muppireddypally, Telangana</div></div><div style="text-align:right; line-height:1.6;"><strong>Payslip for ${data.month}</strong><br>Generated: ${new Date().toLocaleDateString()}</div></div><div style="font-size: 22px; font-weight: bold; text-align: center; margin-bottom: 30px;">SALARY SLIP</div><div style="display: flex; justify-content: space-between; gap: 20px; margin-bottom: 30px;"><div style="flex:1; border: 1px solid #ccc; padding: 15px; border-radius: 8px; background: #f8fafc; line-height:1.6;"><strong>Employee Name:</strong> ${data.emplName}<br><strong>Employee ID:</strong> ${data.emplId}<br><strong>Category:</strong> ${data.category}</div><div style="flex:1; border: 1px solid #ccc; padding: 15px; border-radius: 8px; background: #f8fafc; line-height:1.6;"><strong>Total Days in Month:</strong> 30<br><strong>Payable Days:</strong> ${data.payableDays} <span style="font-size:12px;">(Present: ${data.present}, Leave: ${data.leaves}, Hol: ${data.ph})</span><br><strong>Fixed Gross:</strong> ₹${data.actualGross.toLocaleString('en-IN')}<br><strong>Leave Balance:</strong> ${data.leaveBal}</div></div><table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; border: 1px solid #cbd5e1;"><tr style="background-color: #f1f5f9; color: #1e293b;"><th style="border: 1px solid #cbd5e1; padding: 12px; text-align: left;">Earnings</th><th style="border: 1px solid #cbd5e1; padding: 12px; text-align: left;">Amount (₹)</th><th style="border: 1px solid #cbd5e1; padding: 12px; text-align: left;">Deductions</th><th style="border: 1px solid #cbd5e1; padding: 12px; text-align: left;">Amount (₹)</th></tr><tr><td style="border: 1px solid #cbd5e1; padding: 12px;">Basic Salary</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.basic.toLocaleString('en-IN')}</td><td style="border: 1px solid #cbd5e1; padding: 12px;">E.S.I</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.esi.toLocaleString('en-IN')}</td></tr><tr><td style="border: 1px solid #cbd5e1; padding: 12px;">HRA</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.hra.toLocaleString('en-IN')}</td><td style="border: 1px solid #cbd5e1; padding: 12px;">Provident Fund (PF)</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.pf.toLocaleString('en-IN')}</td></tr><tr><td style="border: 1px solid #cbd5e1; padding: 12px;">Conveyance Allowance</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.conv.toLocaleString('en-IN')}</td><td style="border: 1px solid #cbd5e1; padding: 12px;">VPF</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.vpf.toLocaleString('en-IN')}</td></tr><tr><td style="border: 1px solid #cbd5e1; padding: 12px;">Special Allowance</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.spl.toLocaleString('en-IN')}</td><td style="border: 1px solid #cbd5e1; padding: 12px;">Professional Tax (PT)</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.pt.toLocaleString('en-IN')}</td></tr><tr><td style="border: 1px solid #cbd5e1; padding: 12px;">Medical Allowance</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.med.toLocaleString('en-IN')}</td><td style="border: 1px solid #cbd5e1; padding: 12px;"></td><td style="border: 1px solid #cbd5e1; padding: 12px;"></td></tr>${data.otEarnings > 0 ? `<tr><td style="border: 1px solid #cbd5e1; padding: 12px;"><strong>Overtime Earnings (${data.extraHours} hrs @ ₹${data.perHour.toFixed(2)}/hr)</strong></td><td style="border: 1px solid #cbd5e1; padding: 12px;"><strong>${data.otEarnings.toLocaleString('en-IN')}</strong></td><td style="border: 1px solid #cbd5e1; padding: 12px;"></td><td style="border: 1px solid #cbd5e1; padding: 12px;"></td></tr>` : ''}<tr><th style="border: 1px solid #cbd5e1; padding: 12px; background-color: #f1f5f9;">Total Gross Earnings</th><th style="border: 1px solid #cbd5e1; padding: 12px; background-color: #f1f5f9;">${(data.gross + data.otEarnings).toLocaleString('en-IN')}</th><th style="border: 1px solid #cbd5e1; padding: 12px; background-color: #f1f5f9;">Total Deductions</th><th style="border: 1px solid #cbd5e1; padding: 12px; background-color: #f1f5f9;">${data.deductions.toLocaleString('en-IN')}</th></tr></table><div style="font-size: 22px; font-weight: bold; color: #059669; text-align: right; padding: 15px; border: 2px solid #059669; background: #ecfdf5; border-radius: 8px;">NET PAYABLE SALARY: ₹${roundedNet.toLocaleString('en-IN')}<span style="font-size: 14px; font-weight: normal; color: #475569; margin-top: 8px; display:block;">(Rupees ${wordsNet})</span></div><div style="text-align: center; margin-top: 50px; font-size: 12px; color: #666; border-top: 1px solid #eee; padding-top: 20px;">This is a computer-generated payslip and does not require a physical signature.</div></div>`;
+    }
+
+    function downloadPayslip() { if(!currentPayslipHTML) return; let printDiv = document.getElementById('print-section'); if(!printDiv) { printDiv = document.createElement('div'); printDiv.id = 'print-section'; document.body.appendChild(printDiv); } printDiv.innerHTML = currentPayslipHTML; setTimeout(() => window.print(), 300); }
+
+    // ⚠️ RESTORED HISTORY TABLE ⚠️
+    async function loadHistory() { 
+        const m = document.getElementById('hist-month').value; 
+        let d = document.getElementById('hist-date').value; 
+        const q = document.getElementById('hist-empl-selected-id').value || document.getElementById('hist-empl-search-input').value; 
+        document.getElementById('history-results').innerHTML = '<p style="text-align:center; color: var(--text-muted);">Searching...</p>'; 
+        const data = await callGoogleAPI({action: 'searchHistory', month: m, date: d, query: q}); 
+        renderHistory(data); 
+    }
+    
+    function renderHistory(data) { 
+        historyData = data; const div = document.getElementById('history-results'); 
+        const selectedEmpl = document.getElementById('hist-empl-selected-id').value; 
+        const searchQ = document.getElementById('hist-empl-search-input').value; 
+        
+        if(!data || data.length === 0) return div.innerHTML = '<p style="text-align:center;">No records found.</p>'; 
+        
+        if (selectedEmpl || (searchQ && data.every(d => d.emplId == data[0].emplId))) { 
+            let totalOTMins = 0; 
+            let tableHTML = `<div class="history-table-container"><div class="history-table-header"><h3 style="margin: 0; color: var(--accent); font-size: 16px;">${data[0].emplId} - ${data[0].emplName}</h3><p style="margin: 5px 0 0 0; font-size: 13px; color: var(--text-muted);">Total Records: ${data.length}</p></div><div class="history-table-wrapper"><table class="history-table"><thead><tr><th>Date</th><th>Shift</th><th>In</th><th>Out</th><th>OT</th><th>Edit</th></tr></thead><tbody>`; 
+            
+            data.forEach((r, idx) => { 
+                let editBtn = (currentUser.role === 'Admin' || currentUser.role === 'HR') ? `<button onclick="openAttEdit(${idx})" style="background:transparent; border:1px solid var(--accent); color:var(--accent); border-radius:4px; cursor:pointer; padding:2px 6px;">Edit</button>` : '--'; 
+                let otStr = r.otTime || '--'; 
+                if(otStr !== '--' && otStr.includes(':')) { let p = otStr.split(':'); totalOTMins += (parseInt(p[0])*60) + parseInt(p[1]); } 
+                let inT = r.inTime || '--'; let outT = r.outTime || '--'; if(r.shift === 'LEAVE') { inT = 'LEAVE'; outT = 'LEAVE'; }
+
+                tableHTML += `<tr><td>${r.date.substring(0,5)}</td><td>${r.shift}</td><td style="color: var(--success);">${inT}</td><td style="color: var(--danger);">${outT}</td><td style="color: var(--warning); font-weight: bold;">${otStr}</td><td>${editBtn}</td></tr>`; 
+            }); 
+            
+            let totalOTHrs = Math.floor(totalOTMins / 60); let totalOTRemMins = totalOTMins % 60; let formattedTotalOT = `${totalOTHrs}:${totalOTRemMins.toString().padStart(2, '0')}`; 
+            tableHTML += `</tbody></table></div><div style="padding: 15px; background: rgba(0,0,0,0.4); text-align: right; border-top: 1px solid rgba(255,255,255,0.1);"><strong style="color: var(--text-main);">Total OT: <span style="color: var(--warning); font-size: 16px;">${formattedTotalOT} Hrs</span></strong></div></div>`; 
+            div.innerHTML = tableHTML; 
+        } else {
+            let html = ''; 
+            data.forEach((r, idx) => { 
+                let editBtn = (currentUser.role === 'Admin' || currentUser.role === 'HR') ? `<div class="edit-badge" onclick="openAttEdit(${idx})">Edit</div>` : ''; 
+                let inT = r.inTime || '--'; let outT = r.outTime || '--'; 
+                let statusUI = `In: <strong style="color:var(--success)">${inT}</strong> | Out: <strong style="color:var(--danger)">${outT}</strong>`; 
+                if(r.shift === 'LEAVE') { statusUI = `<strong style="color:var(--danger)">🔴 ON LEAVE</strong>`; } 
+                html += `<div class="card">${editBtn}<h4 style="color:var(--accent);">${r.date}</h4><div><strong>${r.emplId} - ${r.emplName}</strong></div><div style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">${statusUI}</div></div>`; 
+            }); div.innerHTML = html;
+        }
+    }
+    
+    async function submitAdminLeave() { const id = document.getElementById('leave-empl-id').value; const date = document.getElementById('leave-date').value; const rem = document.getElementById('leave-remarks').value; if(!id || !date) return alert("Select employee and date"); const res = await callGoogleAPI({action: 'markLeaveAdmin', emplId: id, date: date, remarks: rem, user: currentUser.username}); if(res.status==='success') { showToast("Leave Assigned"); document.getElementById('leave-remarks').value=''; } else alert(res.message); }
+    function filterAdminCards(containerId, query) { const filter = query.toLowerCase(); const cards = document.getElementById(containerId).getElementsByClassName('card'); for(let i=0; i<cards.length; i++) { cards[i].style.display = cards[i].innerText.toLowerCase().includes(filter) ? 'block' : 'none'; } }
+    function openAttEdit(idx) { const r = historyData[idx]; document.getElementById('edit-att-row').value = r.rowIndex; document.getElementById('edit-att-in').value = r.inTime; document.getElementById('edit-att-out').value = r.outTime; document.getElementById('edit-att-perm').value = r.permTime; document.getElementById('edit-att-rem').value = r.remarks; document.getElementById('edit-att-modal').style.display = 'flex'; }
+    async function saveAdminAtt() { await callGoogleAPI({action:'adminUpdateRecord', row: document.getElementById('edit-att-row').value, inTime: document.getElementById('edit-att-in').value, outTime: document.getElementById('edit-att-out').value, perm: document.getElementById('edit-att-perm').value, remarks: document.getElementById('edit-att-rem').value, user: currentUser.username}); closeModals(); loadHistory(); showToast("Record Updated"); }
+    async function downloadCSV() { const m = document.getElementById('export-month').value; if (!m) return alert("Select month."); const res = await callGoogleAPI({action:'exportCSV', month: m}); const link = document.createElement('a'); link.href = 'data:text/csv;base64,' + res; link.download = 'Attendance_' + m + '.csv'; link.click(); }
+    
+    async function loadAdminUsersData() { const data = await callGoogleAPI({action:'getAdminUsersData'}); adminUsersCache = data; let html = ''; data.forEach((u, idx) => { html += `<div class="card"><div class="edit-badge" onclick="openUserModal(${idx})">Edit</div><h4>${u.username}</h4><p>${u.role}</p></div>`; }); document.getElementById('admin-users-list').innerHTML = html; }
+    function openUserModal(idx) { document.getElementById('user-modal-error').innerText = ''; if(idx !== undefined && adminUsersCache[idx]) { const u = adminUsersCache[idx]; document.getElementById('user-row').value = u.rowIndex; document.getElementById('user-name').value = u.username; document.getElementById('user-role').value = u.role; document.getElementById('user-email').value = u.email; document.getElementById('user-pass').value = u.pass; document.getElementById('btn-del-user').style.display = 'block'; } else { ['user-row','user-name','user-role','user-email','user-pass'].forEach(id => document.getElementById(id).value = ''); document.getElementById('btn-del-user').style.display = 'none'; } document.getElementById('edit-user-modal').style.display = 'flex'; }
+    async function saveAdminUser() { await callGoogleAPI({action:'saveUser', row: document.getElementById('user-row').value, username: document.getElementById('user-name').value, role: document.getElementById('user-role').value, email: document.getElementById('user-email').value, pass: document.getElementById('user-pass').value}); closeModals(); loadAdminUsersData(); showToast("User Saved"); }
+    async function deleteAdminUser() { if(confirm('Delete user?')) { await callGoogleAPI({action:'deleteUser', row: document.getElementById('user-row').value}); closeModals(); loadAdminUsersData(); showToast("User Deleted"); } }
+    
+    function loadAdminEmplData() { document.getElementById('empl-shift').innerHTML = shiftsData.map(s => `<option value="${s.name}">${s.name}</option>`).join(''); renderEnrollmentList(); }
+    function openEmplModal(idx) { document.getElementById('empl-modal-error').innerText = ''; if(idx !== undefined && employeeList[idx]) { const e = employeeList[idx]; document.getElementById('empl-row').value = e.rowIndex; document.getElementById('empl-id').value = e.id; document.getElementById('empl-name').value = e.name; document.getElementById('empl-shift').value = e.shift; document.getElementById('empl-category').value = e.category; document.getElementById('empl-leavebal').value = e.leaveBal; document.getElementById('empl-pin').value = e.pin; document.getElementById('empl-gross').value = e.gross; document.getElementById('empl-basic').value = e.basic; document.getElementById('empl-hra').value = e.hra; document.getElementById('empl-conv').value = e.conv; document.getElementById('empl-spl').value = e.spl; document.getElementById('empl-med').value = e.med; document.getElementById('empl-esi').value = e.esi; document.getElementById('empl-pf').value = e.pf; document.getElementById('empl-vpf').value = e.vpf; document.getElementById('empl-pt').value = e.pt; document.getElementById('btn-del-empl').style.display = 'block'; } else { ['empl-row','empl-id','empl-name','empl-pin','empl-gross','empl-basic','empl-hra','empl-conv','empl-spl','empl-med','empl-esi','empl-pf','empl-vpf','empl-pt'].forEach(id => document.getElementById(id).value = ''); document.getElementById('empl-leavebal').value = '0'; document.getElementById('btn-del-empl').style.display = 'none'; } document.getElementById('edit-empl-modal').style.display = 'flex'; }
+    async function saveAdminEmpl() { await callGoogleAPI({action:'saveEmpl', row: document.getElementById('empl-row').value, id: document.getElementById('empl-id').value, name: document.getElementById('empl-name').value, shift: document.getElementById('empl-shift').value, category: document.getElementById('empl-category').value, leavebal: document.getElementById('empl-leavebal').value, gross: document.getElementById('empl-gross').value, basic: document.getElementById('empl-basic').value, hra: document.getElementById('empl-hra').value, conv: document.getElementById('empl-conv').value, spl: document.getElementById('empl-spl').value, med: document.getElementById('empl-med').value, esi: document.getElementById('empl-esi').value, pf: document.getElementById('empl-pf').value, vpf: document.getElementById('empl-vpf').value, pt: document.getElementById('empl-pt').value, pin: document.getElementById('empl-pin').value}); closeModals(); fetchDataAndInitializeAI(); showToast("Employee Saved"); }
+    async function deleteAdminEmpl() { if(confirm('Delete employee?')) { await callGoogleAPI({action:'deleteEmpl', row: document.getElementById('empl-row').value}); closeModals(); fetchDataAndInitializeAI(); showToast("Employee Deleted"); } }
+    
+    function openBulkModal() { document.getElementById('bulk-csv-input').value = ''; document.getElementById('bulk-empl-modal').style.display = 'flex'; }
+    async function saveBulkEmpl() { const res = await callGoogleAPI({action:'bulkAddEmployees', csv: document.getElementById('bulk-csv-input').value}); closeModals(); fetchDataAndInitializeAI(); showToast(`Added ${res.count||0} Employees`); }
+    
+    // ⚠️ FIXED: DYNAMIC HELP GUIDE ⚠️
     function openTutorial() { 
         var activeSection = document.querySelector('.view-section.active');
         var activeMainTab = activeSection ? activeSection.id : 'view-entry';
         let title = "Help Guide"; let html = ""; 
         
         if (activeMainTab === 'view-kiosk') {
-            title = "🔢 Standby Kiosk Help";
-            html = '<ul><li><strong>AI Kiosk:</strong> Select IN/OUT. Stand in front of the camera. The AI will recognize you instantly and literally speak your name!</li></ul>';
+            title = "🔢 Standby Kiosk Help"; html = '<ul><li><strong>AI Kiosk:</strong> Select IN/OUT. Stand in front of the camera. The AI will recognize you instantly and literally speak your name!</li></ul>';
         } else if (activeMainTab === 'view-entry') { 
-            title = "📋 Entry Help"; 
-            html = '<ul><li><strong>Manual Entry:</strong> Search employee and click Punch IN/OUT. Offline punches auto-sync.</li></ul>'; 
+            title = "📋 Entry Help"; html = '<ul><li><strong>Manual Entry:</strong> Search employee and click Punch IN/OUT. Offline punches auto-sync.</li></ul>'; 
         } else if (activeMainTab === 'view-history') { 
-            title = "📜 History Help"; 
-            html = '<ul><li><strong>Search Records:</strong> Pick a month, a specific date, or type an employee\'s name/ID to filter the list.</li></ul>'; 
+            title = "📜 History Help"; html = '<ul><li><strong>Search Records:</strong> Pick a month, a specific date, or type an employee\'s name/ID to filter the list.</li></ul>'; 
         } else if (activeMainTab === 'view-admin') { 
-            title = "🛠️ Admin Help";
-            html = '<ul><li><strong>Enroll Faces:</strong> Go to Employee Master Data section so the AI can recognize them.</li><li><strong>Payroll:</strong> Generate exact salary payouts based on punches.</li></ul>';
+            var activeSubTab = document.querySelector('.sub-tab.active'); 
+            var subId = activeSubTab ? activeSubTab.id : 'sub-btn-dash';
+            if (subId === 'sub-btn-dash') { title = "📊 Dashboard Help"; html = '<ul><li><strong>Live Overview:</strong> See exactly how many staff are present, on leave, or late today.</li><li><strong>Export CSV:</strong> Download an entire month\'s data into an Excel file for payroll.</li></ul>'; } 
+            else if (subId === 'sub-btn-empdash') { title = "🧑‍💼 Employee Dashboard"; html = '<ul><li><strong>Payroll Engine:</strong> Generate detailed salary, deduction, and overtime reports for any employee based on their actual punches.</li></ul>'; } 
+            else if (subId === 'sub-btn-leave') { title = "⛱️ Leave Management"; html = '<ul><li><strong>Assign Leave:</strong> Select an employee, pick a date, and enter a reason.</li><li>This will lock their shift as \'LEAVE\' and deduct 1 from their Leave Balance.</li></ul>'; } 
+            else if (subId === 'sub-btn-empl') { title = "👥 Employees Help"; html = '<ul><li><strong>Manage Staff:</strong> Add/Edit employees, assign default shifts, specify OT categories, and manage all Salary structures.</li><li><strong>Enroll Faces:</strong> Click Enroll Face to teach the AI to recognize the employee.</li></ul>'; } 
+            else if (subId === 'sub-btn-user') { title = "🔐 App Users Help"; html = '<ul><li><strong>Manage Access:</strong> Create logins. Type exactly <strong>Admin</strong> or <strong>HR</strong> in the Role box.</li><li><strong>Standby Mode:</strong> Type exactly <strong>Standby</strong> in the Role box to create a PIN-only Kiosk account!</li></ul>'; } 
         } 
         
-        document.getElementById('tutorial-title').innerText = title; 
-        document.getElementById('tutorial-body').innerHTML = html; 
-        document.getElementById('tutorial-modal').style.display = 'flex'; 
+        document.getElementById('tutorial-title').innerText = title; document.getElementById('tutorial-body').innerHTML = html; document.getElementById('tutorial-modal').style.display = 'flex'; 
     }
-
+    
     function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
 
+    window.onscroll = function() { const btn = document.getElementById("scrollToTopBtn"); if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) { btn.style.display = "flex"; } else { btn.style.display = "none"; } };
+    function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+
+    // ⚠️ STARTUP SEQUENCE ⚠️
     setInterval(updateLiveClock, 1000); updateLiveClock(); startApp();
+    setTimeout(function() { const loader = document.getElementById('loader'); if(loader) { loader.style.opacity='0'; setTimeout(()=>loader.style.display='none', 600); } }, 1500);
 </script>
 </body>
 </html>
