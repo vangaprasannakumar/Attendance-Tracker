@@ -84,7 +84,7 @@
         .status-loading { background: rgba(245, 158, 11, 0.2); color: var(--warning); border: 1px solid var(--warning); }
         .status-success { background: rgba(16, 185, 129, 0.2); color: var(--success); border: 1px solid var(--success); }
         .status-error { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
-        #timer-display { text-align: center; font-size: 45px; font-weight: bold; color: var(--accent); margin: 15px 0; display: none; text-shadow: 0 0 15px rgba(59, 130, 246, 0.5);}
+        #timer-display { display: none; } /* HIDDEN AS REQUESTED */
 
         #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 99999; background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.15), transparent 50%), #09090b; color: #f4f4f5; transition: opacity 0.6s ease-out; }
         #loader img { max-width: 220px; height: auto; margin-bottom: 30px; animation: pulse 2s infinite ease-in-out; }
@@ -445,6 +445,7 @@
     let employeeList = []; let shiftsData = []; let historyData = []; let adminUsersCache = [];
     let modelsLoaded = false; let faceMatcher = null; let kioskInterval = null; let kioskTimer = null;
     let currentAction = 'in'; let recentlyPunched = []; let currentPayslipHTML = ""; 
+    let activeEnrollId = null;
 
     // ⚠️ APP INSTALLATION LOGIC ⚠️
     let deferredPrompt;
@@ -472,7 +473,8 @@
     function playSuccessSound(name, actionStr) {
         if ('speechSynthesis' in window) {
             let utterance = new SpeechSynthesisUtterance(`Thank you, ${name}. Punch ${actionStr} successful.`);
-            utterance.rate = 1.0; window.speechSynthesis.speak(utterance);
+            utterance.rate = 1.0;
+            window.speechSynthesis.speak(utterance);
         }
     }
 
@@ -480,7 +482,8 @@
         try {
             const response = await fetch(GOOGLE_API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload), redirect: 'follow' });
             const rawText = await response.text(); 
-            try { return JSON.parse(rawText); } catch(e) { return { status: 'error', message: 'API Permission Error. Re-deploy Google Script as "Anyone".' }; }
+            try { return JSON.parse(rawText); } 
+            catch(e) { return { status: 'error', message: 'API Permission Error. Re-deploy Google Script as "Anyone".' }; }
         } catch (error) { return { status: 'error', message: 'Network error or Google API offline.' }; }
     }
 
@@ -525,7 +528,8 @@
                 document.getElementById('display-user').innerText = `Logged in as: ${currentUser.username} (${currentUser.role})`;
                 document.getElementById('login-container').style.display = 'none';
                 document.getElementById('main-app').style.display = 'block';
-                applyRolePermissions(); fetchDataAndInitializeAI();
+                applyRolePermissions();
+                fetchDataAndInitializeAI();
             } catch(e) { safeRemove('capco_attendance_user'); }
         }
     }
@@ -552,6 +556,7 @@
         stopKioskMode(); stopEnrollment(); switchTab('entry');
     }
 
+    // --- AI & DATA INIT ---
     async function fetchDataAndInitializeAI() {
         document.getElementById('network-status').innerText = '🔄 Syncing...'; document.getElementById('network-status').style.color = 'var(--accent)';
         const data = await callGoogleAPI({ action: 'getInitData' });
@@ -583,21 +588,31 @@
         faceMatcher = labeledDescriptors.length > 0 ? new faceapi.FaceMatcher(labeledDescriptors, 0.55) : null; 
     }
 
+    // --- KIOSK ANTI-LAG LOOP ENGINE ---
+    let isKioskScanning = false;
+    let isEnrollScanning = false;
+
     async function startKioskMode(action) {
         if(!modelsLoaded) return alert("AI is still loading...");
         if(!faceMatcher) return alert("No employees have been enrolled yet! Go to Admin tab first.");
         currentAction = action; recentlyPunched = []; 
         document.getElementById('kiosk-home').style.display = 'none'; document.getElementById('kiosk-camera-view').style.display = 'block'; document.getElementById('kiosk-action-title').innerText = `Punch ${action.toUpperCase()}`;
         const video = document.getElementById('kiosk-video'); const status = document.getElementById('ai-status'); const timerDiv = document.getElementById('timer-display');
-        document.getElementById('video-container').style.display = 'block'; status.style.display = 'block'; status.className = 'status-loading'; status.innerText = "Starting Camera..."; timerDiv.style.display = 'block';
+        document.getElementById('video-container').style.display = 'block'; status.style.display = 'block'; status.className = 'status-loading'; status.innerText = "Starting Camera..."; 
 
         try {
-            video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+            // Lowered resolution to stop mobile lag
+            video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } });
+            
             video.onplay = () => {
                 startKioskTimer(); 
-                kioskInterval = setInterval(async () => {
+                isKioskScanning = true;
+                
+                // Smart Recursive Loop (waits for CPU to finish before starting next scan)
+                async function kioskScanLoop() {
+                    if(!isKioskScanning) return;
                     try {
-                        const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.4 })).withFaceLandmarks().withFaceDescriptor();
+                        const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 })).withFaceLandmarks().withFaceDescriptor();
                         if (detection) {
                             const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
                             if (bestMatch.label !== 'unknown') {
@@ -605,11 +620,9 @@
                                 if (!recentlyPunched.includes(empId)) {
                                     recentlyPunched.push(empId); const emp = employeeList.find(e => e.id == empId);
                                     status.className = 'status-success'; status.innerText = `Recognized: ${emp.name}! Logging...`;
-                                    timeLeft = 120; timerDiv.innerText = timeLeft; 
                                     
                                     const res = await callGoogleAPI({ action: 'logAttendance', emplId: emp.id, emplName: emp.name, type: currentAction, remarks: 'AI Camera', loggedByUser: 'Kiosk', offlineTimeIso: null, selectedShift: emp.shift });
                                     
-                                    // ⚠️ FIXED: SHOW REJECTION MESSAGE IF ALREADY PUNCHED ⚠️
                                     if(res.status === 'success') {
                                         showToast(res.message);
                                         playSuccessSound(emp.name, currentAction.toUpperCase()); 
@@ -623,15 +636,32 @@
                             } else { status.className = 'status-error'; status.innerText = "Face not recognized. Move closer."; }
                         } else { status.className = 'status-loading'; status.innerText = "Looking for a face..."; }
                     } catch (err) {}
-                }, 800); 
+                    
+                    if(isKioskScanning) kioskInterval = setTimeout(kioskScanLoop, 600);
+                }
+                kioskScanLoop();
             };
         } catch(e) { status.className = 'status-error'; status.innerText = "Camera Error: " + e.message; }
     }
 
     let timeLeft = 120; 
-    function startKioskTimer() { timeLeft = 120; document.getElementById('timer-display').innerText = timeLeft; kioskTimer = setInterval(() => { timeLeft--; document.getElementById('timer-display').innerText = timeLeft; if(timeLeft <= 0) stopKioskMode(); }, 1000); }
-    function stopKioskMode() { clearInterval(kioskInterval); clearInterval(kioskTimer); const video = document.getElementById('kiosk-video'); if(video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); } document.getElementById('kiosk-camera-view').style.display = 'none'; document.getElementById('video-container').style.display = 'none'; document.getElementById('ai-status').style.display = 'none'; document.getElementById('timer-display').style.display = 'none'; document.getElementById('kiosk-home').style.display = 'block'; }
+    function startKioskTimer() { 
+        clearInterval(kioskTimer); // MUST clear old timer before starting new one
+        timeLeft = 120; 
+        kioskTimer = setInterval(() => { 
+            timeLeft--; 
+            if(timeLeft <= 0) stopKioskMode(); 
+        }, 1000); 
+    }
+    
+    function stopKioskMode() { 
+        isKioskScanning = false;
+        clearTimeout(kioskInterval); clearInterval(kioskTimer); 
+        const video = document.getElementById('kiosk-video'); if(video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); } 
+        document.getElementById('kiosk-camera-view').style.display = 'none'; document.getElementById('video-container').style.display = 'none'; document.getElementById('ai-status').style.display = 'none'; document.getElementById('timer-display').style.display = 'none'; document.getElementById('kiosk-home').style.display = 'block'; 
+    }
 
+    // --- ENROLLMENT LOGIC ---
     function renderEnrollmentList() {
         let html = '';
         employeeList.forEach((emp, idx) => {
@@ -645,15 +675,21 @@
         if(!modelsLoaded) return alert("AI is still loading...");
         activeEnrollId = empId; document.getElementById('admin-empl-container').style.display = 'none'; document.getElementById('enrollment-camera-view').style.display = 'block';
         const video = document.getElementById('enroll-video'); const status = document.getElementById('enroll-status'); status.className = 'status-loading'; status.innerText = "Starting Camera...";
+        
         try {
-            video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+            video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } });
             status.innerText = "Looking for face... Please look directly at the camera.";
+            
             video.onplay = async () => {
-                const scanInterval = setInterval(async () => {
+                isEnrollScanning = true;
+                
+                async function enrollScanLoop() {
+                    if(!isEnrollScanning) return;
                     try {
-                        const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.4 })).withFaceLandmarks().withFaceDescriptor();
+                        const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 })).withFaceLandmarks().withFaceDescriptor();
                         if (detection) {
-                            clearInterval(scanInterval); status.className = 'status-success'; status.innerText = "Face Captured! Saving...";
+                            isEnrollScanning = false; // Stop loop immediately
+                            status.className = 'status-success'; status.innerText = "Face Captured! Saving...";
                             const dataString = JSON.stringify(Array.from(detection.descriptor));
                             const res = await callGoogleAPI({ action: 'saveFaceData', emplId: activeEnrollId, faceDataStr: dataString });
                             if(res.status === 'success') {
@@ -663,11 +699,18 @@
                             } else { status.className = 'status-error'; status.innerText = "Save Failed: " + res.message; }
                         }
                     } catch(err) {}
-                }, 500);
+                    
+                    if(isEnrollScanning) setTimeout(enrollScanLoop, 600);
+                }
+                enrollScanLoop();
             };
         } catch(e) { status.className = 'status-error'; status.innerText = "Camera Error: " + e.message; }
     }
-    function stopEnrollment() { const video = document.getElementById('enroll-video'); if(video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); } document.getElementById('enrollment-camera-view').style.display = 'none'; document.getElementById('admin-empl-container').style.display = 'block'; activeEnrollId = null; renderEnrollmentList(); }
+    
+    function stopEnrollment() { 
+        isEnrollScanning = false;
+        const video = document.getElementById('enroll-video'); if(video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); } document.getElementById('enrollment-camera-view').style.display = 'none'; document.getElementById('admin-empl-container').style.display = 'block'; activeEnrollId = null; renderEnrollmentList(); 
+    }
 
     function openDropdown(listId) { document.querySelectorAll('.dropdown-list').forEach(l => l.style.display='none'); document.getElementById(listId).style.display = 'block'; }
     function filterDropdown(inputId, listId, hiddenId) { const filter = document.getElementById(inputId).value.toLowerCase(); const list = document.getElementById(listId); const items = list.getElementsByClassName('dropdown-item'); let hasVisible = false; list.style.display = 'block'; for(let i=0; i<items.length; i++) { if (items[i].innerText.toLowerCase().includes(filter)) { items[i].style.display = 'block'; hasVisible = true; } else { items[i].style.display = 'none'; } } if(!hasVisible) list.style.display = 'none'; document.getElementById(hiddenId).value = ''; if(listId === 'empl-dropdown-list') document.getElementById('live-status-badge').style.display = 'none'; }
@@ -751,13 +794,14 @@
         if(data.status === 'error') return resDiv.innerHTML = `<p style="color:var(--danger); text-align:center;">${data.message}</p>`;
         
         let roundedNet = Math.round(data.netPay); let wordsNet = numberToWords(roundedNet);
-        resDiv.innerHTML = `<div class="emp-dash-box" style="border-color: var(--accent);"><h4>🧑‍💼 ${data.emplName} <span style="float:right; font-size:12px; color:var(--text-muted); font-weight:400;">(${data.category})</span></h4><div class="emp-dash-row">Leave Balance: <span>${data.leaveBal}</span></div><div class="emp-dash-row">Month: <span>${data.month}</span></div></div><div class="emp-dash-box"><h4>📅 Attendance Summary</h4><div class="emp-dash-row">Present Days: <span style="color:var(--success);">${data.present}</span></div><div class="emp-dash-row">Leaves Taken: <span style="color:var(--danger);">${data.leaves}</span></div><div class="emp-dash-row">Public Holidays / Sun: <span>${data.ph}</span></div><div class="emp-dash-row" style="border-top:1px solid rgba(255,255,255,0.1); padding-top:5px;">Total Payable Days: <span>${data.payableDays}</span></div></div>${(data.category === 'Staff With OT' || data.category === 'Staff With SOT') ? `<div class="emp-dash-box"><h4>⏱️ Overtime Engine</h4><div class="emp-dash-row">Extra Hours: <span>${data.extraHours} hrs</span></div><div class="emp-dash-row">Per Hour Rate: <span>₹${data.perHour.toFixed(2)}</span></div><div class="emp-dash-row">OT Earnings: <span style="color:var(--success);">+ ₹${data.otEarnings.toFixed(2)}</span></div></div>` : ''}<div class="emp-dash-box"><h4>💸 Salary Breakdown</h4><div class="emp-dash-row">Fixed Gross: <span>₹${data.actualGross.toLocaleString('en-IN')}</span></div><div class="emp-dash-row">Prorated Gross: <span>₹${data.gross.toLocaleString('en-IN')}</span></div><div class="emp-dash-row" style="font-size:12px; color:var(--text-muted);">Basic: ₹${data.basic.toLocaleString('en-IN')} | HRA: ₹${data.hra.toLocaleString('en-IN')}</div><div class="emp-dash-row" style="font-size:12px; color:var(--text-muted);">Conv: ₹${data.conv.toLocaleString('en-IN')} | Spl: ₹${data.spl.toLocaleString('en-IN')} | Med: ₹${data.med.toLocaleString('en-IN')}</div></div><div class="emp-dash-box"><h4>📉 Deductions</h4><div class="emp-dash-row" style="font-size:12px; color:var(--text-muted);">ESI: ₹${data.esi.toLocaleString('en-IN')} | PF: ₹${data.pf.toLocaleString('en-IN')}</div><div class="emp-dash-row" style="font-size:12px; color:var(--text-muted);">VPF: ₹${data.vpf.toLocaleString('en-IN')} | PT: ₹${data.pt.toLocaleString('en-IN')}</div><div class="emp-dash-row" style="border-top:1px solid rgba(255,255,255,0.1); padding-top:5px; margin-top:5px;">Total Deductions: <span style="color:var(--danger);">- ₹${data.deductions.toLocaleString('en-IN')}</span></div></div><div class="emp-dash-box" style="background: rgba(16, 185, 129, 0.1); border-color: var(--success); margin-bottom: 5px;"><div class="emp-dash-row" style="margin-bottom:0;"><span style="font-size: 16px;">NET PAYOUT</span><span class="emp-dash-highlight">₹${roundedNet.toLocaleString('en-IN')}</span></div></div><div class="emp-dash-words">(Rupees ${wordsNet})</div><button class="btn-main" style="background: #2563eb;" onclick="downloadPayslip()">🖨️ Download PDF Payslip</button>`;
+        resDiv.innerHTML = `<div class="emp-dash-box" style="border-color: var(--accent);"><h4>🧑‍💼 ${data.emplName} <span style="float:right; font-size:12px; color:var(--text-muted); font-weight:400;">(${data.category})</span></h4><div class="emp-dash-row">Leave Balance: <span>${data.leaveBal}</span></div><div class="emp-dash-row">Month: <span>${data.month}</span></div></div><div class="emp-dash-box"><h4>📅 Attendance Summary</h4><div class="emp-dash-row">Present Days: <span style="color:var(--success);">${data.present}</span></div><div class="emp-dash-row">Leaves Taken: <span style="color:var(--danger);">${data.leaves}</span></div><div class="emp-dash-row">Public Holidays / Sun: <span>${data.ph}</span></div><div class="emp-dash-row" style="border-top:1px solid rgba(255,255,255,0.1); padding-top:5px;">Total Payable Days: <span>${data.payableDays}</span></div></div>${(data.category === 'Staff With OT' || data.category === 'Staff With SOT') ? `<div class="emp-dash-box"><h4>⏱️ Overtime Engine</h4><div class="emp-dash-row">Extra Hours: <span>${data.extraHours} hrs</span></div><div class="emp-dash-row">Per Hour Rate: <span>₹${data.perHour.toFixed(2)}</span></div><div class="emp-dash-row">OT Earnings: <span style="color:var(--success);">+ ₹${data.otEarnings.toFixed(2)}</span></div></div>` : ''}<div class="emp-dash-box"><h4>💸 Salary Breakdown</h4><div class="emp-dash-row">Fixed Gross: <span>₹${data.actualGross.toLocaleString('en-IN')}</span></div><div class="emp-dash-row">Prorated Gross: <span>₹${data.gross.toLocaleString('en-IN')}</span></div><div class="emp-dash-row" style="font-size:12px; color:var(--text-muted);">Basic: ₹${data.basic.toLocaleString('en-IN')} | HRA: ₹${data.hra.toLocaleString('en-IN')}</div><div class="emp-dash-row" style="font-size:12px; color:var(--text-muted);">Conv: ₹${data.conv.toLocaleString('en-IN')} | Spl: ₹${data.spl.toLocaleString('en-IN')} | Med: ₹${data.med.toLocaleString('en-IN')}</div></div><div class="emp-dash-box"><h4>📉 Deductions</h4><div class="emp-dash-row" style="font-size:12px; color:var(--text-muted);">ESI: ₹${data.esi.toLocaleString('en-IN')} | PF: ₹${data.pf.toLocaleString('en-IN')}</div><div class="emp-dash-row" style="font-size:12px; color:var(--text-muted);">VPF: ₹${data.vpf.toLocaleString('en-IN')} | PT: ₹${data.pt.toLocaleString('en-IN')}</div><div class="emp-dash-row" style="border-top:1px solid rgba(255,255,255,0.1); padding-top:5px; margin-top:5px;">Total Deductions: <span style="color:var(--danger);">- ₹${data.deductions.toLocaleString('en-IN')}</span></div></div><div class="emp-dash-box" style="background: rgba(16, 185, 129, 0.1); border-color: var(--success); margin-bottom: 5px;"><div class="emp-dash-row" style="margin-bottom:0;"><span style="font-size: 16px;">NET PAYOUT</span><span class="emp-dash-highlight">₹${roundedNet.toLocaleString('en-IN')}</span></div></div><div class="emp-dash-words">(Rupees ${wordsNet})</div><button class="btn-main" style="background: #2563eb; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);" onclick="downloadPayslip()">🖨️ Download PDF Payslip</button>`;
         
         currentPayslipHTML = `<div style="font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; padding: 20px; color: #333; max-width: 800px; margin: 0 auto; background: white;"><div style="display: flex; justify-content: space-between; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 20px; align-items: center;"><div><img src="https://i.postimg.cc/C1fJDfZC/Capco-Logo.png?v=final" alt="Capco Logo" style="height: 55px; width: auto; margin-bottom: 12px; display:block;"><div style="font-size:14px; color:#666; margin-top:5px;">Muppireddypally, Telangana</div></div><div style="text-align:right; line-height:1.6;"><strong>Payslip for ${data.month}</strong><br>Generated: ${new Date().toLocaleDateString()}</div></div><div style="font-size: 22px; font-weight: bold; text-align: center; margin-bottom: 30px;">SALARY SLIP</div><div style="display: flex; justify-content: space-between; gap: 20px; margin-bottom: 30px;"><div style="flex:1; border: 1px solid #ccc; padding: 15px; border-radius: 8px; background: #f8fafc; line-height:1.6;"><strong>Employee Name:</strong> ${data.emplName}<br><strong>Employee ID:</strong> ${data.emplId}<br><strong>Category:</strong> ${data.category}</div><div style="flex:1; border: 1px solid #ccc; padding: 15px; border-radius: 8px; background: #f8fafc; line-height:1.6;"><strong>Total Days in Month:</strong> ${data.monthDays}<br><strong>Payable Days:</strong> ${data.payableDays} <span style="font-size:12px;">(Present: ${data.present}, Leave: ${data.leaves}, Hol: ${data.ph})</span><br><strong>Fixed Gross:</strong> ₹${data.actualGross.toLocaleString('en-IN')}<br><strong>Leave Balance:</strong> ${data.leaveBal}</div></div><table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; border: 1px solid #cbd5e1;"><tr style="background-color: #f1f5f9; color: #1e293b;"><th style="border: 1px solid #cbd5e1; padding: 12px; text-align: left;">Earnings</th><th style="border: 1px solid #cbd5e1; padding: 12px; text-align: left;">Amount (₹)</th><th style="border: 1px solid #cbd5e1; padding: 12px; text-align: left;">Deductions</th><th style="border: 1px solid #cbd5e1; padding: 12px; text-align: left;">Amount (₹)</th></tr><tr><td style="border: 1px solid #cbd5e1; padding: 12px;">Basic Salary</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.basic.toLocaleString('en-IN')}</td><td style="border: 1px solid #cbd5e1; padding: 12px;">E.S.I</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.esi.toLocaleString('en-IN')}</td></tr><tr><td style="border: 1px solid #cbd5e1; padding: 12px;">HRA</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.hra.toLocaleString('en-IN')}</td><td style="border: 1px solid #cbd5e1; padding: 12px;">Provident Fund (PF)</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.pf.toLocaleString('en-IN')}</td></tr><tr><td style="border: 1px solid #cbd5e1; padding: 12px;">Conveyance Allowance</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.conv.toLocaleString('en-IN')}</td><td style="border: 1px solid #cbd5e1; padding: 12px;">VPF</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.vpf.toLocaleString('en-IN')}</td></tr><tr><td style="border: 1px solid #cbd5e1; padding: 12px;">Special Allowance</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.spl.toLocaleString('en-IN')}</td><td style="border: 1px solid #cbd5e1; padding: 12px;">Professional Tax (PT)</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.pt.toLocaleString('en-IN')}</td></tr><tr><td style="border: 1px solid #cbd5e1; padding: 12px;">Medical Allowance</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.med.toLocaleString('en-IN')}</td><td style="border: 1px solid #cbd5e1; padding: 12px;"></td><td style="border: 1px solid #cbd5e1; padding: 12px;"></td></tr>${data.otEarnings > 0 ? `<tr><td style="border: 1px solid #cbd5e1; padding: 12px;"><strong>Overtime Earnings (${data.extraHours} hrs @ ₹${data.perHour.toFixed(2)}/hr)</strong></td><td style="border: 1px solid #cbd5e1; padding: 12px;"><strong>${data.otEarnings.toLocaleString('en-IN')}</strong></td><td style="border: 1px solid #cbd5e1; padding: 12px;"></td><td style="border: 1px solid #cbd5e1; padding: 12px;"></td></tr>` : ''}<tr><th style="border: 1px solid #cbd5e1; padding: 12px; background-color: #f1f5f9;">Total Gross Earnings</th><th style="border: 1px solid #cbd5e1; padding: 12px; background-color: #f1f5f9;">${(data.gross + data.otEarnings).toLocaleString('en-IN')}</th><th style="border: 1px solid #cbd5e1; padding: 12px; background-color: #f1f5f9;">Total Deductions</th><th style="border: 1px solid #cbd5e1; padding: 12px; background-color: #f1f5f9;">${data.deductions.toLocaleString('en-IN')}</th></tr></table><div style="font-size: 22px; font-weight: bold; color: #059669; text-align: right; padding: 15px; border: 2px solid #059669; background: #ecfdf5; border-radius: 8px;">NET PAYABLE SALARY: ₹${roundedNet.toLocaleString('en-IN')}<span style="font-size: 14px; font-weight: normal; color: #475569; margin-top: 8px; display:block;">(Rupees ${wordsNet})</span></div><div style="text-align: center; margin-top: 50px; font-size: 12px; color: #666; border-top: 1px solid #eee; padding-top: 20px;">This is a computer-generated payslip and does not require a physical signature.</div></div>`;
     }
     
     function downloadPayslip() { if(!currentPayslipHTML) return; let printDiv = document.getElementById('print-section'); if(!printDiv) { printDiv = document.createElement('div'); printDiv.id = 'print-section'; document.body.appendChild(printDiv); } printDiv.innerHTML = currentPayslipHTML; setTimeout(() => window.print(), 300); }
 
+    // --- RESTORED HISTORY TABLE VIEW ---
     async function loadHistory() { 
         const m = document.getElementById('hist-month').value; 
         let d = document.getElementById('hist-date').value; 
