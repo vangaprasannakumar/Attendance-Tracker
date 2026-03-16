@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Capco Master AI App</title>
     
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#09090b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Capco HR">
+
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -16,7 +22,6 @@
         ::-webkit-scrollbar { width: 6px; height: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
         ::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; opacity: 0.6; transition: 0.2s; } ::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 
-        /* 💎 MODERN TOAST NOTIFICATION 💎 */
         #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); background: rgba(16, 185, 129, 0.95); backdrop-filter: blur(10px); color: white; padding: 16px 30px; border-radius: 30px; box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4); z-index: 100000; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 15px; opacity: 0; pointer-events: none; border: 1px solid rgba(255,255,255,0.2); }
         #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
@@ -27,14 +32,13 @@
         #login-container { display: block; width: 100%; max-width: 380px; text-align: center; background: rgba(24, 24, 27, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); padding: 40px 30px; border-radius: 24px; margin-top: 10vh; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
         #login-container img { width: 100%; max-width: 220px; height: auto; margin-bottom:25px; display: block; margin-left: auto; margin-right: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); }
         
-        /* Fixed font size to 16px to stop iOS zooming */
+        /* ⚠️ FIXED ZOOM GLITCH: font-size 16px explicitly ⚠️ */
         .login-input, select, input[type="text"], input[type="date"], input[type="month"], input[type="number"], input[type="time"], input[type="password"], textarea { width: 100%; padding: 16px; margin: 10px 0; border-radius: 14px; border: 1px solid var(--border); background: rgba(0,0,0,0.4); color: white; font-family: 'Outfit'; font-size: 16px !important; box-sizing: border-box; transition: all 0.3s ease; appearance: auto; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
         .login-input:focus, select:focus, input:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px rgba(59,130,246,0.15), inset 0 2px 4px rgba(0,0,0,0.2); background: rgba(0,0,0,0.6); }
         
         .btn-main { width: 100%; padding: 16px; background: var(--accent); color: white; border: none; border-radius: 14px; font-weight: 600; font-size: 16px; cursor: pointer; margin-top: 15px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 15px rgba(59,130,246,0.35); }
         .btn-main:hover { background: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(59,130,246,0.45); } .btn-main:active { transform: translateY(1px) scale(0.98); }
 
-        /* 💎 BEAUTIFUL HEADER 💎 */
         .header { padding: 20px 25px; background: linear-gradient(180deg, rgba(30, 41, 59, 0.4) 0%, rgba(24, 24, 27, 0.1) 100%); border-bottom: 1px solid rgba(59, 130, 246, 0.2); }
         .header-top { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 15px;}
         .app-branding { display: flex; align-items: center; gap: 12px; }
@@ -68,7 +72,6 @@
         .bg-perm { background: linear-gradient(135deg, var(--warning), #d97706); color: #000; } 
         .bg-leave { background: linear-gradient(135deg, #64748b, #475569); } 
         
-        /* 💎 KIOSK MODERNIZATION 💎 */
         .kiosk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 25px;}
         .kiosk-btn { padding: 25px 15px; font-size: 18px; border: none; border-radius: 18px; color: white; font-weight: bold; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); text-transform: uppercase; letter-spacing: 1px;}
         .kiosk-btn:hover { transform: translateY(-4px); filter: brightness(1.1); }
@@ -88,7 +91,6 @@
         .spinner { border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid var(--accent); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px;}
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Shared Components */
         .card { background: rgba(255,255,255,0.03); padding: 20px; border-radius: 18px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.05); border-left: 4px solid var(--accent); position: relative; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2); } 
         .card:hover { transform: translateY(-3px); background: rgba(255,255,255,0.05); }
         .card h4 { margin: 0 0 10px 0; font-size: 16px; color: var(--text-main); } 
@@ -121,8 +123,24 @@
         #scrollToTopBtn:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(59, 130, 246, 0.6); filter: brightness(1.1); }
         #scrollToTopBtn:active { transform: translateY(0); }
 
+        .emp-dash-box { border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.3); padding: 18px; border-radius: 16px; margin-bottom: 14px; transition: all 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .emp-dash-box:hover { border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.02); }
+        .emp-dash-box h4 { margin: 0 0 12px 0; color: var(--accent); font-size: 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;}
+        .emp-dash-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; color: var(--text-muted);}
+        .emp-dash-row span { color: var(--text-main); font-weight: 500; }
+        .emp-dash-highlight { color: var(--success) !important; font-weight: 700 !important; font-size: 18px; text-shadow: 0 0 10px rgba(16, 185, 129, 0.3); }
+        .emp-dash-words { font-size: 12px; color: var(--text-muted); text-align:right; margin-top:-4px; margin-bottom: 10px; padding-right: 2px; font-style: italic; }
+
+        /* ⚠️ RESTORED HISTORY TABLE STYLES ⚠️ */
+        .history-table-container { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
+        .history-table-header { padding: 15px; background: rgba(59,130,246,0.1); border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .history-table-wrapper { overflow-x: auto; }
+        .history-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+        .history-table th { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); white-space: nowrap; color: var(--text-muted); background: rgba(255,255,255,0.05); }
+        .history-table td { padding: 10px; white-space: nowrap; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-main); }
+
         #print-section { display: none; }
-        @media print { html, body { background: #ffffff !important; color: #000000 !important; } body > *:not(#print-section) { display: none !important; } #print-section { display: block !important; } * { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; } }
+        @media print { html, body { background: #ffffff !important; color: #000000 !important; } body > *:not(#print-section) { display: none !important; } #print-section { display: block !important; position: relative !important; width: 100% !important; margin: 0 !important; padding: 0 !important; background: #ffffff !important; } * { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; } @page { margin: 10mm; size: A4 portrait; } }
     </style>
 </head>
 <body>
@@ -209,7 +227,7 @@
         
         <div class="dropdown-container" id="shift-select-container" style="display:none; margin-top:-10px;">
             <label style="color: var(--accent);">Adjust Shift Timing (OT Staff)</label>
-            <select id="entry-shift-select" class="dropdown-input"></select>
+            <select id="entry-shift-select" class="dropdown-input" style="padding: 14px; cursor: pointer;"></select>
         </div>
 
         <div id="live-status-badge" class="status-badge">Select an employee to check status</div>
@@ -217,10 +235,10 @@
 
         <label>Action</label>
         <div class="btn-grid">
-            <button class="btn-action bg-in" onclick="submitAttendance('in')">PUNCH IN</button>
-            <button class="btn-action bg-out" onclick="submitAttendance('out')">PUNCH OUT</button>
-            <button class="btn-action bg-perm" onclick="submitAttendance('permission')">MARK PERMISSION</button>
-            <button class="btn-action bg-leave" onclick="submitAttendance('leave')">MARK LEAVE</button>
+            <button class="btn-action bg-in" id="btn-in" onclick="submitAttendance('in')">Punch In</button>
+            <button class="btn-action bg-out" id="btn-out" onclick="submitAttendance('out')">Punch Out</button>
+            <button class="btn-action bg-perm" id="btn-perm" onclick="submitAttendance('permission')">Mark Permission</button>
+            <button class="btn-action bg-leave" id="btn-leave" onclick="submitAttendance('leave')">Mark Leave</button>
         </div>
         <label>Remarks (Optional)</label>
         <input type="text" id="entry-remarks" placeholder="Add note...">
@@ -403,8 +421,8 @@
 
 <div class="modal" id="tutorial-modal">
     <div class="modal-content" style="max-width: 440px; padding: 35px;">
-        <h3 style="margin:0 0 15px 0; color: var(--text-main); font-size: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;">Help Guide</h3>
-        <div id="tutorial-body" style="max-height: 60vh; overflow-y: auto; padding-right: 10px; color: var(--text-muted); font-size: 14px; line-height: 1.6;">
+        <h3 style="margin:0 0 15px 0; color: var(--text-main); font-size: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;" id="tutorial-title">Help Guide</h3>
+        <div id="tutorial-body" style="max-height: 60vh; overflow-y: auto; padding-right: 10px; color: var(--text-muted); font-size: 15px; line-height: 1.6;">
             <ul><li><strong>AI Kiosk:</strong> Select IN/OUT. Stand in front of the camera. The AI will recognize you instantly and literally speak your name!</li><li><strong>Manual Entry:</strong> Search employee and click Punch IN/OUT. Offline punches auto-sync.</li><li><strong>Admin:</strong> Enroll faces in the Employee Master Data section so the AI can recognize them. Edit full payroll figures easily.</li></ul>
         </div>
         <div class="modal-btns" style="margin-top: 25px;"><button class="btn-main" style="border-radius: 20px; padding: 18px;" onclick="closeModals()">Got it, let's go!</button></div>
@@ -496,7 +514,7 @@
     }
 
     async function handleLogin() {
-        if(GOOGLE_API_URL === "YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE") return alert("Developer Error: Add API URL on line 420");
+        if(GOOGLE_API_URL === "YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE") return alert("Developer Error: Add API URL on line 438");
         const u = document.getElementById('login-user').value.trim();
         const p = document.getElementById('login-pass').value.trim();
         const btn = document.getElementById('btn-login-submit');
@@ -684,7 +702,7 @@
     async function hardRefreshApp(event) {
         if(event) { var btn = event.currentTarget.querySelector('svg'); btn.style.transition = 'transform 0.5s ease'; btn.style.transform = 'rotate(360deg)'; setTimeout(() => { btn.style.transform = 'none'; btn.style.transition = 'none'; }, 500); }
         if(navigator.onLine) {
-            document.getElementById('network-status').innerText = '🔄 Syncing...';
+            document.getElementById('network-status').innerText = '🔄 Syncing...'; document.getElementById('network-status').style.color = 'var(--accent)';
             const data = await callGoogleAPI({ action: 'getInitData' });
             if(data && data.employees) {
                 employeeList = data.employees; shiftsData = data.shifts; populateDropdowns(data.employees); safeSet('capco_empl_cache', JSON.stringify(data.employees)); safeSet('capco_shifts_cache', JSON.stringify(data.shifts));
@@ -700,10 +718,7 @@
     
     async function loadDashboard() { const stats = await callGoogleAPI({action: 'getDashboardStats'}); if(stats.total) { document.getElementById('dash-total').innerText = stats.total; document.getElementById('dash-present').innerText = stats.present; document.getElementById('dash-in').innerText = stats.inNow; document.getElementById('dash-out').innerText = stats.outNow; document.getElementById('dash-leave').innerText = stats.leave; document.getElementById('dash-late').innerText = stats.late; } }
 
-    function numberToWords(num) {
-        if (num === 0) return 'Zero Only'; var a = ['','One ','Two ','Three ','Four ', 'Five ','Six ','Seven ','Eight ','Nine ','Ten ','Eleven ','Twelve ','Thirteen ','Fourteen ','Fifteen ','Sixteen ','Seventeen ','Eighteen ','Nineteen ']; var b = ['', '', 'Twenty ','Thirty ','Forty ','Fifty ', 'Sixty ','Seventy ','Eighty ','Ninety ']; var n = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/); if (!n) return ''; var str = ''; str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + a[n[1][1]]) + 'Crore ' : ''; str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + a[n[2][1]]) + 'Lakh ' : ''; str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + a[n[3][1]]) + 'Thousand ' : ''; str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + a[n[4][1]]) + 'Hundred ' : ''; str += (n[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + a[n[5][1]]) + 'Only' : 'Only'; return str.trim();
-    }
-
+    // ⚠️ FIXED PAYROLL UI ⚠️
     async function generateEmpDash() {
         const m = document.getElementById('empdash-month').value; const id = document.getElementById('empdash-id').value; const resDiv = document.getElementById('empdash-results');
         if(!m || !id) return resDiv.innerHTML = '<p style="color:var(--danger); text-align:center;">Please select an Employee and Month.</p>';
@@ -716,9 +731,9 @@
         
         currentPayslipHTML = `<div style="font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; padding: 20px; color: #333; max-width: 800px; margin: 0 auto; background: white;"><div style="display: flex; justify-content: space-between; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 20px; align-items: center;"><div><img src="https://i.postimg.cc/C1fJDfZC/Capco-Logo.png?v=final" alt="Capco Logo" style="height: 55px; width: auto; margin-bottom: 12px; display:block;"><div style="font-size:14px; color:#666; margin-top:5px;">Muppireddypally, Telangana</div></div><div style="text-align:right; line-height:1.6;"><strong>Payslip for ${data.month}</strong><br>Generated: ${new Date().toLocaleDateString()}</div></div><div style="font-size: 22px; font-weight: bold; text-align: center; margin-bottom: 30px;">SALARY SLIP</div><div style="display: flex; justify-content: space-between; gap: 20px; margin-bottom: 30px;"><div style="flex:1; border: 1px solid #ccc; padding: 15px; border-radius: 8px; background: #f8fafc; line-height:1.6;"><strong>Employee Name:</strong> ${data.emplName}<br><strong>Employee ID:</strong> ${data.emplId}<br><strong>Category:</strong> ${data.category}</div><div style="flex:1; border: 1px solid #ccc; padding: 15px; border-radius: 8px; background: #f8fafc; line-height:1.6;"><strong>Total Days in Month:</strong> 30<br><strong>Payable Days:</strong> ${data.payableDays} <span style="font-size:12px;">(Present: ${data.present}, Leave: ${data.leaves}, Hol: ${data.ph})</span><br><strong>Fixed Gross:</strong> ₹${data.actualGross.toLocaleString('en-IN')}<br><strong>Leave Balance:</strong> ${data.leaveBal}</div></div><table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; border: 1px solid #cbd5e1;"><tr style="background-color: #f1f5f9; color: #1e293b;"><th style="border: 1px solid #cbd5e1; padding: 12px; text-align: left;">Earnings</th><th style="border: 1px solid #cbd5e1; padding: 12px; text-align: left;">Amount (₹)</th><th style="border: 1px solid #cbd5e1; padding: 12px; text-align: left;">Deductions</th><th style="border: 1px solid #cbd5e1; padding: 12px; text-align: left;">Amount (₹)</th></tr><tr><td style="border: 1px solid #cbd5e1; padding: 12px;">Basic Salary</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.basic.toLocaleString('en-IN')}</td><td style="border: 1px solid #cbd5e1; padding: 12px;">E.S.I</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.esi.toLocaleString('en-IN')}</td></tr><tr><td style="border: 1px solid #cbd5e1; padding: 12px;">HRA</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.hra.toLocaleString('en-IN')}</td><td style="border: 1px solid #cbd5e1; padding: 12px;">Provident Fund (PF)</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.pf.toLocaleString('en-IN')}</td></tr><tr><td style="border: 1px solid #cbd5e1; padding: 12px;">Conveyance Allowance</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.conv.toLocaleString('en-IN')}</td><td style="border: 1px solid #cbd5e1; padding: 12px;">VPF</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.vpf.toLocaleString('en-IN')}</td></tr><tr><td style="border: 1px solid #cbd5e1; padding: 12px;">Special Allowance</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.spl.toLocaleString('en-IN')}</td><td style="border: 1px solid #cbd5e1; padding: 12px;">Professional Tax (PT)</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.pt.toLocaleString('en-IN')}</td></tr><tr><td style="border: 1px solid #cbd5e1; padding: 12px;">Medical Allowance</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.med.toLocaleString('en-IN')}</td><td style="border: 1px solid #cbd5e1; padding: 12px;"></td><td style="border: 1px solid #cbd5e1; padding: 12px;"></td></tr>${data.otEarnings > 0 ? `<tr><td style="border: 1px solid #cbd5e1; padding: 12px;"><strong>Overtime Earnings (${data.extraHours} hrs @ ₹${data.perHour.toFixed(2)}/hr)</strong></td><td style="border: 1px solid #cbd5e1; padding: 12px;"><strong>${data.otEarnings.toLocaleString('en-IN')}</strong></td><td style="border: 1px solid #cbd5e1; padding: 12px;"></td><td style="border: 1px solid #cbd5e1; padding: 12px;"></td></tr>` : ''}<tr><th style="border: 1px solid #cbd5e1; padding: 12px; background-color: #f1f5f9;">Total Gross Earnings</th><th style="border: 1px solid #cbd5e1; padding: 12px; background-color: #f1f5f9;">${(data.gross + data.otEarnings).toLocaleString('en-IN')}</th><th style="border: 1px solid #cbd5e1; padding: 12px; background-color: #f1f5f9;">Total Deductions</th><th style="border: 1px solid #cbd5e1; padding: 12px; background-color: #f1f5f9;">${data.deductions.toLocaleString('en-IN')}</th></tr></table><div style="font-size: 22px; font-weight: bold; color: #059669; text-align: right; padding: 15px; border: 2px solid #059669; background: #ecfdf5; border-radius: 8px;">NET PAYABLE SALARY: ₹${roundedNet.toLocaleString('en-IN')}<span style="font-size: 14px; font-weight: normal; color: #475569; margin-top: 8px; display:block;">(Rupees ${wordsNet})</span></div><div style="text-align: center; margin-top: 50px; font-size: 12px; color: #666; border-top: 1px solid #eee; padding-top: 20px;">This is a computer-generated payslip and does not require a physical signature.</div></div>`;
     }
-
     function downloadPayslip() { if(!currentPayslipHTML) return; let printDiv = document.getElementById('print-section'); if(!printDiv) { printDiv = document.createElement('div'); printDiv.id = 'print-section'; document.body.appendChild(printDiv); } printDiv.innerHTML = currentPayslipHTML; setTimeout(() => window.print(), 300); }
 
+    // ⚠️ RESTORED HISTORY TABLE VIEW ⚠️
     async function loadHistory() { 
         const m = document.getElementById('hist-month').value; 
         let d = document.getElementById('hist-date').value; 
@@ -735,24 +750,18 @@
         
         if(!data || data.length === 0) return div.innerHTML = '<p style="text-align:center;">No records found.</p>'; 
         
-        // ⚠️ SINGLE PERSON TABLE VIEW RESTORED ⚠️
         if (selectedEmpl || (searchQ && data.every(d => d.emplId == data[0].emplId))) { 
             let totalOTMins = 0; 
-            let tableHTML = `<div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; overflow: hidden; margin-bottom: 20px;">
-                <div style="padding: 15px; background: rgba(59,130,246,0.1); border-bottom: 1px solid rgba(255,255,255,0.1);">
+            let tableHTML = `<div class="history-table-container">
+                <div class="history-table-header">
                     <h3 style="margin: 0; color: var(--accent); font-size: 16px;">${data[0].emplId} - ${data[0].emplName}</h3>
                     <p style="margin: 5px 0 0 0; font-size: 13px; color: var(--text-muted);">Total Records: ${data.length}</p>
                 </div>
-                <div style="overflow-x: auto;">
-                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                <div class="history-table-wrapper">
+                    <table class="history-table">
                         <thead>
-                            <tr style="background: rgba(255,255,255,0.05); color: var(--text-muted);">
-                                <th style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); white-space: nowrap;">Date</th>
-                                <th style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">Shift</th>
-                                <th style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">In</th>
-                                <th style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">Out</th>
-                                <th style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">OT</th>
-                                <th style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">Edit</th>
+                            <tr>
+                                <th>Date</th><th>Shift</th><th>In</th><th>Out</th><th>OT</th><th>Edit</th>
                             </tr>
                         </thead>
                         <tbody>`; 
@@ -765,13 +774,13 @@
                 let inT = r.inTime || '--'; let outT = r.outTime || '--';
                 if(r.shift === 'LEAVE') { inT = 'LEAVE'; outT = 'LEAVE'; }
 
-                tableHTML += `<tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                    <td style="padding: 10px; white-space: nowrap; color: var(--text-main);">${r.date.substring(0,5)}</td>
-                    <td style="padding: 10px;">${r.shift}</td>
-                    <td style="padding: 10px; color: var(--success);">${inT}</td>
-                    <td style="padding: 10px; color: var(--danger);">${outT}</td>
-                    <td style="padding: 10px; color: var(--warning); font-weight: bold;">${otStr}</td>
-                    <td style="padding: 10px;">${editBtn}</td>
+                tableHTML += `<tr>
+                    <td>${r.date.substring(0,5)}</td>
+                    <td>${r.shift}</td>
+                    <td style="color: var(--success);">${inT}</td>
+                    <td style="color: var(--danger);">${outT}</td>
+                    <td style="color: var(--warning); font-weight: bold;">${otStr}</td>
+                    <td>${editBtn}</td>
                 </tr>`; 
             }); 
             
@@ -797,6 +806,7 @@
     async function saveAdminAtt() { await callGoogleAPI({action:'adminUpdateRecord', row: document.getElementById('edit-att-row').value, inTime: document.getElementById('edit-att-in').value, outTime: document.getElementById('edit-att-out').value, perm: document.getElementById('edit-att-perm').value, remarks: document.getElementById('edit-att-rem').value, user: currentUser.username}); closeModals(); loadHistory(); showToast("Record Updated"); }
     async function downloadCSV() { const m = document.getElementById('export-month').value; if (!m) return alert("Select month."); const res = await callGoogleAPI({action:'exportCSV', month: m}); const link = document.createElement('a'); link.href = 'data:text/csv;base64,' + res; link.download = 'Attendance_' + m + '.csv'; link.click(); }
     
+    // ⚠️ FIXED: Edit Modals stringification bug ⚠️
     async function loadAdminUsersData() { const data = await callGoogleAPI({action:'getAdminUsersData'}); adminUsersCache = data; let html = ''; data.forEach((u, idx) => { html += `<div class="card"><div class="edit-badge" onclick="openUserModal(${idx})">Edit</div><h4>${u.username}</h4><p>${u.role}</p></div>`; }); document.getElementById('admin-users-list').innerHTML = html; }
     function openUserModal(idx) { document.getElementById('user-modal-error').innerText = ''; if(idx !== undefined && adminUsersCache[idx]) { const u = adminUsersCache[idx]; document.getElementById('user-row').value = u.rowIndex; document.getElementById('user-name').value = u.username; document.getElementById('user-role').value = u.role; document.getElementById('user-email').value = u.email; document.getElementById('user-pass').value = u.pass; document.getElementById('btn-del-user').style.display = 'block'; } else { ['user-row','user-name','user-role','user-email','user-pass'].forEach(id => document.getElementById(id).value = ''); document.getElementById('btn-del-user').style.display = 'none'; } document.getElementById('edit-user-modal').style.display = 'flex'; }
     async function saveAdminUser() { await callGoogleAPI({action:'saveUser', row: document.getElementById('user-row').value, username: document.getElementById('user-name').value, role: document.getElementById('user-role').value, email: document.getElementById('user-email').value, pass: document.getElementById('user-pass').value}); closeModals(); loadAdminUsersData(); showToast("User Saved"); }
