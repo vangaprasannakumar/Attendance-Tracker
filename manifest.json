@@ -2,21 +2,23 @@
   "name": "Capco Workforce",
   "short_name": "Capco HR",
   "description": "Enterprise HR, Payroll, and Attendance System for Capco Capacitor",
-  "start_url": "./index.html",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#09090b",
-  "theme_color": "#3b82f6",
+  "theme_color": "#09090b",
   "orientation": "portrait-primary",
   "icons": [
     {
       "src": "https://i.postimg.cc/k5YhWmTg/Logo.jpg?v=final",
       "sizes": "192x192",
-      "type": "image/jpeg"
+      "type": "image/jpeg",
+      "purpose": "any maskable"
     },
     {
       "src": "https://i.postimg.cc/k5YhWmTg/Logo.jpg?v=final",
       "sizes": "512x512",
-      "type": "image/jpeg"
+      "type": "image/jpeg",
+      "purpose": "any maskable"
     }
   ]
 }
