@@ -241,7 +241,6 @@
         </div>
         <label>Remarks (Optional)</label>
         <input type="text" id="entry-remarks" placeholder="Add note...">
-        
         <p id="entry-status" style="text-align:center; font-size:15px; font-weight:600; margin-top:10px;"></p>
     </div>
 
@@ -441,6 +440,7 @@
     let employeeList = []; let shiftsData = []; let historyData = []; let adminUsersCache = [];
     let modelsLoaded = false; let faceMatcher = null; let kioskInterval = null; let kioskTimer = null;
     let currentAction = 'in'; let recentlyPunched = []; let currentPayslipHTML = ""; 
+    let activeEnrollId = null;
 
     if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(err => console.log('SW bypassed.')); }
 
@@ -516,7 +516,7 @@
     }
 
     async function handleLogin() {
-        if(GOOGLE_API_URL === "YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE") return alert("Developer Error: Add API URL on line 369");
+        if(GOOGLE_API_URL === "YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE") return alert("Developer Error: Add API URL on line 377");
         const u = document.getElementById('login-user').value.trim();
         const p = document.getElementById('login-pass').value.trim();
         const btn = document.getElementById('btn-login-submit');
@@ -537,7 +537,6 @@
         stopKioskMode(); stopEnrollment(); switchTab('entry');
     }
 
-    // --- AI & DATA INIT ---
     async function fetchDataAndInitializeAI() {
         document.getElementById('network-status').innerText = '🔄 Syncing...'; document.getElementById('network-status').style.color = 'var(--accent)';
         const data = await callGoogleAPI({ action: 'getInitData' });
@@ -569,7 +568,6 @@
         faceMatcher = labeledDescriptors.length > 0 ? new faceapi.FaceMatcher(labeledDescriptors, 0.55) : null; 
     }
 
-    // --- KIOSK LOGIC ---
     async function startKioskMode(action) {
         if(!modelsLoaded) return alert("AI is still loading...");
         if(!faceMatcher) return alert("No employees have been enrolled yet! Go to Admin tab first.");
@@ -614,8 +612,6 @@
     function startKioskTimer() { timeLeft = 120; document.getElementById('timer-display').innerText = timeLeft; kioskTimer = setInterval(() => { timeLeft--; document.getElementById('timer-display').innerText = timeLeft; if(timeLeft <= 0) stopKioskMode(); }, 1000); }
     function stopKioskMode() { clearInterval(kioskInterval); clearInterval(kioskTimer); const video = document.getElementById('kiosk-video'); if(video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); } document.getElementById('kiosk-camera-view').style.display = 'none'; document.getElementById('video-container').style.display = 'none'; document.getElementById('ai-status').style.display = 'none'; document.getElementById('timer-display').style.display = 'none'; document.getElementById('kiosk-home').style.display = 'block'; }
 
-    // --- ENROLLMENT LOGIC ---
-    let activeEnrollId = null;
     function renderEnrollmentList() {
         let html = '';
         employeeList.forEach((emp, idx) => {
@@ -653,7 +649,6 @@
     }
     function stopEnrollment() { const video = document.getElementById('enroll-video'); if(video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); } document.getElementById('enrollment-camera-view').style.display = 'none'; document.getElementById('admin-empl-container').style.display = 'block'; activeEnrollId = null; renderEnrollmentList(); }
 
-    // --- MANUAL ENTRY LOGIC ---
     function openDropdown(listId) { document.querySelectorAll('.dropdown-list').forEach(l => l.style.display='none'); document.getElementById(listId).style.display = 'block'; }
     function filterDropdown(inputId, listId, hiddenId) { const filter = document.getElementById(inputId).value.toLowerCase(); const list = document.getElementById(listId); const items = list.getElementsByClassName('dropdown-item'); let hasVisible = false; list.style.display = 'block'; for(let i=0; i<items.length; i++) { if (items[i].innerText.toLowerCase().includes(filter)) { items[i].style.display = 'block'; hasVisible = true; } else { items[i].style.display = 'none'; } } if(!hasVisible) list.style.display = 'none'; document.getElementById(hiddenId).value = ''; if(listId === 'empl-dropdown-list') document.getElementById('live-status-badge').style.display = 'none'; }
     function populateDropdowns(data) { const listEntry = document.getElementById('empl-dropdown-list'); const listHist = document.getElementById('hist-empl-dropdown-list'); const listLeave = document.getElementById('leave-empl-dropdown'); const listEmpDash = document.getElementById('empdash-dropdown-list'); listEntry.innerHTML = ''; listHist.innerHTML = ''; listLeave.innerHTML = ''; listEmpDash.innerHTML = ''; data.forEach(e => { const text = `${e.id} - ${e.name}`; let div = `<div class="dropdown-item" onclick="chooseEntry('${e.id}', '${text}')">${text}</div>`; listEntry.innerHTML += div; listHist.innerHTML += `<div class="dropdown-item" onclick="chooseHist('${e.id}', '${text}')">${text}</div>`; listLeave.innerHTML += `<div class="dropdown-item" onclick="chooseLeave('${e.id}', '${text}')">${text}</div>`; listEmpDash.innerHTML += `<div class="dropdown-item" onclick="chooseEmpDash('${e.id}', '${text}')">${text}</div>`; }); }
@@ -674,7 +669,6 @@
         try {
             const emplId = document.getElementById('empl-selected-id').value; const currentStatus = document.getElementById('current-empl-status').value; const remarks = document.getElementById('entry-remarks').value; const status = document.getElementById('entry-status');
             
-            // ⚠️ FIXED: SAFEGUARD PREVENTS CRASH ⚠️
             if(!emplId) { status.style.color = 'var(--danger)'; status.innerText = 'Please select an employee from the dropdown list!'; return; }
             if (action === 'in' && currentStatus === 'IN') { status.style.color = 'var(--danger)'; status.innerText = 'Employee is already IN.'; return; }
             if (action === 'out' && (currentStatus === 'OUT' || currentStatus === 'NONE')) { status.style.color = 'var(--danger)'; status.innerText = 'Cannot punch out before punching in.'; return; }
@@ -720,7 +714,6 @@
         }
     }
 
-    // --- ADMIN VIEWS ---
     function switchAdminSubTab(subTabName) { if (subTabName === 'user' && currentUser.role !== 'Admin') return; document.querySelectorAll('.sub-tab').forEach(e => e.classList.remove('active')); document.getElementById('sub-btn-' + subTabName).classList.add('active'); ['dash','empdash','leave','empl','user'].forEach(s => document.getElementById('admin-'+s+'-section').style.display = 'none'); document.getElementById('admin-'+subTabName+'-section').style.display = 'block'; if (subTabName === 'dash') loadDashboard(); else if (subTabName === 'empl') loadAdminEmplData(); else if (subTabName === 'user') loadAdminUsersData(); }
     
     async function loadDashboard() { const stats = await callGoogleAPI({action: 'getDashboardStats'}); if(stats.total) { document.getElementById('dash-total').innerText = stats.total; document.getElementById('dash-present').innerText = stats.present; document.getElementById('dash-in').innerText = stats.inNow; document.getElementById('dash-out').innerText = stats.outNow; document.getElementById('dash-leave').innerText = stats.leave; document.getElementById('dash-late').innerText = stats.late; } }
@@ -737,9 +730,9 @@
         if(data.status === 'error') return resDiv.innerHTML = `<p style="color:var(--danger); text-align:center;">${data.message}</p>`;
         
         let roundedNet = Math.round(data.netPay); let wordsNet = numberToWords(roundedNet);
-        resDiv.innerHTML = `<div class="emp-dash-box" style="border-color: var(--accent);"><h4>🧑‍💼 ${data.emplName} <span style="float:right; font-size:12px; color:var(--text-muted); font-weight:400;">(${data.category})</span></h4><div class="emp-dash-row">Leave Balance: <span>${data.leaveBal}</span></div><div class="emp-dash-row">Month: <span>${data.month}</span></div></div><div class="emp-dash-box"><h4>📅 Attendance Summary</h4><div class="emp-dash-row">Present Days: <span style="color:var(--success);">${data.present}</span></div><div class="emp-dash-row">Leaves Taken: <span style="color:var(--danger);">${data.leaves}</span></div><div class="emp-dash-row">Public Holidays / Sun: <span>${data.ph}</span></div><div class="emp-dash-row" style="border-top:1px solid rgba(255,255,255,0.1); padding-top:5px;">Total Payable Days: <span>${data.payableDays}</span></div></div>${(data.category === 'Staff With OT' || data.category === 'Staff With SOT') ? `<div class="emp-dash-box"><h4>⏱️ Overtime Engine</h4><div class="emp-dash-row">Extra Hours: <span>${data.extraHours} hrs</span></div><div class="emp-dash-row">Per Hour Rate: <span>₹${data.perHour.toFixed(2)}</span></div><div class="emp-dash-row">OT Earnings: <span style="color:var(--success);">+ ₹${data.otEarnings.toFixed(2)}</span></div></div>` : ''}<div class="emp-dash-box"><h4>💸 Salary Breakdown</h4><div class="emp-dash-row">Fixed Gross: <span>₹${data.actualGross.toLocaleString('en-IN')}</span></div><div class="emp-dash-row">Prorated Gross: <span>₹${data.gross.toLocaleString('en-IN')}</span></div><div class="emp-dash-row" style="font-size:12px; color:var(--text-muted);">Basic: ₹${data.basic.toLocaleString('en-IN')} | HRA: ₹${data.hra.toLocaleString('en-IN')}</div><div class="emp-dash-row" style="font-size:12px; color:var(--text-muted);">Conv: ₹${data.conv.toLocaleString('en-IN')} | Spl: ₹${data.spl.toLocaleString('en-IN')} | Med: ₹${data.med.toLocaleString('en-IN')}</div></div><div class="emp-dash-box"><h4>📉 Deductions</h4><div class="emp-dash-row" style="font-size:12px; color:var(--text-muted);">ESI: ₹${data.esi.toLocaleString('en-IN')} | PF: ₹${data.pf.toLocaleString('en-IN')}</div><div class="emp-dash-row" style="font-size:12px; color:var(--text-muted);">VPF: ₹${data.vpf.toLocaleString('en-IN')} | PT: ₹${data.pt.toLocaleString('en-IN')}</div><div class="emp-dash-row" style="border-top:1px solid rgba(255,255,255,0.1); padding-top:5px; margin-top:5px;">Total Deductions: <span style="color:var(--danger);">- ₹${data.deductions.toLocaleString('en-IN')}</span></div></div><div class="emp-dash-box" style="background: rgba(16, 185, 129, 0.1); border-color: var(--success); margin-bottom: 5px;"><div class="emp-dash-row" style="margin-bottom:0;"><span style="font-size: 16px;">NET PAYOUT</span><span class="emp-dash-highlight">₹${roundedNet.toLocaleString('en-IN')}</span></div></div><div class="emp-dash-words">(Rupees ${wordsNet})</div><button class="btn-main" style="background: #2563eb; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);" onclick="downloadPayslip()">🖨️ Download PDF Payslip</button>`;
+        resDiv.innerHTML = `<div class="emp-dash-box" style="border-color: var(--accent);"><h4>🧑‍💼 ${data.emplName} <span style="float:right; font-size:12px; color:var(--text-muted); font-weight:400;">(${data.category})</span></h4><div class="emp-dash-row">Leave Balance: <span>${data.leaveBal}</span></div><div class="emp-dash-row">Month: <span>${data.month}</span></div></div><div class="emp-dash-box"><h4>📅 Attendance Summary</h4><div class="emp-dash-row">Present Days: <span style="color:var(--success);">${data.present}</span></div><div class="emp-dash-row">Leaves Taken: <span style="color:var(--danger);">${data.leaves}</span></div><div class="emp-dash-row">Public Holidays / Sun: <span>${data.ph}</span></div><div class="emp-dash-row" style="border-top:1px solid rgba(255,255,255,0.1); padding-top:5px;">Total Payable Days: <span>${data.payableDays}</span></div></div>${(data.category === 'Staff With OT' || data.category === 'Staff With SOT') ? `<div class="emp-dash-box"><h4>⏱️ Overtime Engine</h4><div class="emp-dash-row">Extra Hours: <span>${data.extraHours} hrs</span></div><div class="emp-dash-row">Per Hour Rate: <span>₹${data.perHour.toFixed(2)}</span></div><div class="emp-dash-row">OT Earnings: <span style="color:var(--success);">+ ₹${data.otEarnings.toFixed(2)}</span></div></div>` : ''}<div class="emp-dash-box"><h4>💸 Salary Breakdown</h4><div class="emp-dash-row">Fixed Gross: <span>₹${data.actualGross.toLocaleString('en-IN')}</span></div><div class="emp-dash-row">Prorated Gross: <span>₹${data.gross.toLocaleString('en-IN')}</span></div><div class="emp-dash-row" style="font-size:12px; color:var(--text-muted);">Basic: ₹${data.basic.toLocaleString('en-IN')} | HRA: ₹${data.hra.toLocaleString('en-IN')}</div><div class="emp-dash-row" style="font-size:12px; color:var(--text-muted);">Conv: ₹${data.conv.toLocaleString('en-IN')} | Spl: ₹${data.spl.toLocaleString('en-IN')} | Med: ₹${data.med.toLocaleString('en-IN')}</div></div><div class="emp-dash-box"><h4>📉 Deductions</h4><div class="emp-dash-row" style="font-size:12px; color:var(--text-muted);">ESI: ₹${data.esi.toLocaleString('en-IN')} | PF: ₹${data.pf.toLocaleString('en-IN')}</div><div class="emp-dash-row" style="font-size:12px; color:var(--text-muted);">VPF: ₹${data.vpf.toLocaleString('en-IN')} | PT: ₹${data.pt.toLocaleString('en-IN')}</div><div class="emp-dash-row" style="border-top:1px solid rgba(255,255,255,0.1); padding-top:5px; margin-top:5px;">Total Deductions: <span style="color:var(--danger);">- ₹${data.deductions.toLocaleString('en-IN')}</span></div></div><div class="emp-dash-box" style="background: rgba(16, 185, 129, 0.1); border-color: var(--success); margin-bottom: 5px;"><div class="emp-dash-row" style="margin-bottom:0;"><span style="font-size: 16px;">NET PAYOUT</span><span class="emp-dash-highlight">₹${roundedNet.toLocaleString('en-IN')}</span></div></div><div class="emp-dash-words">(Rupees ${wordsNet})</div><button class="btn-main" style="background: #2563eb;" onclick="downloadPayslip()">🖨️ Download PDF Payslip</button>`;
         
-        currentPayslipHTML = `<div style="font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; padding: 20px; color: #333; max-width: 800px; margin: 0 auto; background: white;"><div style="display: flex; justify-content: space-between; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 20px; align-items: center;"><div><img src="https://i.postimg.cc/C1fJDfZC/Capco-Logo.png?v=final" alt="Capco Logo" style="height: 55px; width: auto; margin-bottom: 12px; display:block;"><div style="font-size:14px; color:#666; margin-top:5px;">Muppireddypally, Telangana</div></div><div style="text-align:right; line-height:1.6;"><strong>Payslip for ${data.month}</strong><br>Generated: ${new Date().toLocaleDateString()}</div></div><div style="font-size: 22px; font-weight: bold; text-align: center; margin-bottom: 30px;">SALARY SLIP</div><div style="display: flex; justify-content: space-between; gap: 20px; margin-bottom: 30px;"><div style="flex:1; border: 1px solid #ccc; padding: 15px; border-radius: 8px; background: #f8fafc; line-height:1.6;"><strong>Employee Name:</strong> ${data.emplName}<br><strong>Employee ID:</strong> ${data.emplId}<br><strong>Category:</strong> ${data.category}</div><div style="flex:1; border: 1px solid #ccc; padding: 15px; border-radius: 8px; background: #f8fafc; line-height:1.6;"><strong>Total Days in Month:</strong> 30<br><strong>Payable Days:</strong> ${data.payableDays} <span style="font-size:12px;">(Present: ${data.present}, Leave: ${data.leaves}, Hol: ${data.ph})</span><br><strong>Fixed Gross:</strong> ₹${data.actualGross.toLocaleString('en-IN')}<br><strong>Leave Balance:</strong> ${data.leaveBal}</div></div><table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; border: 1px solid #cbd5e1;"><tr style="background-color: #f1f5f9; color: #1e293b;"><th style="border: 1px solid #cbd5e1; padding: 12px; text-align: left;">Earnings</th><th style="border: 1px solid #cbd5e1; padding: 12px; text-align: left;">Amount (₹)</th><th style="border: 1px solid #cbd5e1; padding: 12px; text-align: left;">Deductions</th><th style="border: 1px solid #cbd5e1; padding: 12px; text-align: left;">Amount (₹)</th></tr><tr><td style="border: 1px solid #cbd5e1; padding: 12px;">Basic Salary</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.basic.toLocaleString('en-IN')}</td><td style="border: 1px solid #cbd5e1; padding: 12px;">E.S.I</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.esi.toLocaleString('en-IN')}</td></tr><tr><td style="border: 1px solid #cbd5e1; padding: 12px;">HRA</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.hra.toLocaleString('en-IN')}</td><td style="border: 1px solid #cbd5e1; padding: 12px;">Provident Fund (PF)</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.pf.toLocaleString('en-IN')}</td></tr><tr><td style="border: 1px solid #cbd5e1; padding: 12px;">Conveyance Allowance</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.conv.toLocaleString('en-IN')}</td><td style="border: 1px solid #cbd5e1; padding: 12px;">VPF</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.vpf.toLocaleString('en-IN')}</td></tr><tr><td style="border: 1px solid #cbd5e1; padding: 12px;">Special Allowance</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.spl.toLocaleString('en-IN')}</td><td style="border: 1px solid #cbd5e1; padding: 12px;">Professional Tax (PT)</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.pt.toLocaleString('en-IN')}</td></tr><tr><td style="border: 1px solid #cbd5e1; padding: 12px;">Medical Allowance</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.med.toLocaleString('en-IN')}</td><td style="border: 1px solid #cbd5e1; padding: 12px;"></td><td style="border: 1px solid #cbd5e1; padding: 12px;"></td></tr>${data.otEarnings > 0 ? `<tr><td style="border: 1px solid #cbd5e1; padding: 12px;"><strong>Overtime Earnings (${data.extraHours} hrs @ ₹${data.perHour.toFixed(2)}/hr)</strong></td><td style="border: 1px solid #cbd5e1; padding: 12px;"><strong>${data.otEarnings.toLocaleString('en-IN')}</strong></td><td style="border: 1px solid #cbd5e1; padding: 12px;"></td><td style="border: 1px solid #cbd5e1; padding: 12px;"></td></tr>` : ''}<tr><th style="border: 1px solid #cbd5e1; padding: 12px; background-color: #f1f5f9;">Total Gross Earnings</th><th style="border: 1px solid #cbd5e1; padding: 12px; background-color: #f1f5f9;">${(data.gross + data.otEarnings).toLocaleString('en-IN')}</th><th style="border: 1px solid #cbd5e1; padding: 12px; background-color: #f1f5f9;">Total Deductions</th><th style="border: 1px solid #cbd5e1; padding: 12px; background-color: #f1f5f9;">${data.deductions.toLocaleString('en-IN')}</th></tr></table><div style="font-size: 22px; font-weight: bold; color: #059669; text-align: right; padding: 15px; border: 2px solid #059669; background: #ecfdf5; border-radius: 8px;">NET PAYABLE SALARY: ₹${roundedNet.toLocaleString('en-IN')}<span style="font-size: 14px; font-weight: normal; color: #475569; margin-top: 8px; display:block;">(Rupees ${wordsNet})</span></div><div style="text-align: center; margin-top: 50px; font-size: 12px; color: #666; border-top: 1px solid #eee; padding-top: 20px;">This is a computer-generated payslip and does not require a physical signature.</div></div>`;
+        currentPayslipHTML = `<div style="font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; padding: 20px; color: #333; max-width: 800px; margin: 0 auto; background: white;"><div style="display: flex; justify-content: space-between; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 20px; align-items: center;"><div><img src="https://i.postimg.cc/C1fJDfZC/Capco-Logo.png?v=final" alt="Capco Logo" style="height: 55px; width: auto; margin-bottom: 12px; display:block;"><div style="font-size:14px; color:#666; margin-top:5px;">Muppireddypally, Telangana</div></div><div style="text-align:right; line-height:1.6;"><strong>Payslip for ${data.month}</strong><br>Generated: ${new Date().toLocaleDateString()}</div></div><div style="font-size: 22px; font-weight: bold; text-align: center; margin-bottom: 30px;">SALARY SLIP</div><div style="display: flex; justify-content: space-between; gap: 20px; margin-bottom: 30px;"><div style="flex:1; border: 1px solid #ccc; padding: 15px; border-radius: 8px; background: #f8fafc; line-height:1.6;"><strong>Employee Name:</strong> ${data.emplName}<br><strong>Employee ID:</strong> ${data.emplId}<br><strong>Category:</strong> ${data.category}</div><div style="flex:1; border: 1px solid #ccc; padding: 15px; border-radius: 8px; background: #f8fafc; line-height:1.6;"><strong>Total Days in Month:</strong> ${data.monthDays}<br><strong>Payable Days:</strong> ${data.payableDays} <span style="font-size:12px;">(Present: ${data.present}, Leave: ${data.leaves}, Hol: ${data.ph})</span><br><strong>Fixed Gross:</strong> ₹${data.actualGross.toLocaleString('en-IN')}<br><strong>Leave Balance:</strong> ${data.leaveBal}</div></div><table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; border: 1px solid #cbd5e1;"><tr style="background-color: #f1f5f9; color: #1e293b;"><th style="border: 1px solid #cbd5e1; padding: 12px; text-align: left;">Earnings</th><th style="border: 1px solid #cbd5e1; padding: 12px; text-align: left;">Amount (₹)</th><th style="border: 1px solid #cbd5e1; padding: 12px; text-align: left;">Deductions</th><th style="border: 1px solid #cbd5e1; padding: 12px; text-align: left;">Amount (₹)</th></tr><tr><td style="border: 1px solid #cbd5e1; padding: 12px;">Basic Salary</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.basic.toLocaleString('en-IN')}</td><td style="border: 1px solid #cbd5e1; padding: 12px;">E.S.I</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.esi.toLocaleString('en-IN')}</td></tr><tr><td style="border: 1px solid #cbd5e1; padding: 12px;">HRA</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.hra.toLocaleString('en-IN')}</td><td style="border: 1px solid #cbd5e1; padding: 12px;">Provident Fund (PF)</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.pf.toLocaleString('en-IN')}</td></tr><tr><td style="border: 1px solid #cbd5e1; padding: 12px;">Conveyance Allowance</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.conv.toLocaleString('en-IN')}</td><td style="border: 1px solid #cbd5e1; padding: 12px;">VPF</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.vpf.toLocaleString('en-IN')}</td></tr><tr><td style="border: 1px solid #cbd5e1; padding: 12px;">Special Allowance</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.spl.toLocaleString('en-IN')}</td><td style="border: 1px solid #cbd5e1; padding: 12px;">Professional Tax (PT)</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.pt.toLocaleString('en-IN')}</td></tr><tr><td style="border: 1px solid #cbd5e1; padding: 12px;">Medical Allowance</td><td style="border: 1px solid #cbd5e1; padding: 12px;">${data.med.toLocaleString('en-IN')}</td><td style="border: 1px solid #cbd5e1; padding: 12px;"></td><td style="border: 1px solid #cbd5e1; padding: 12px;"></td></tr>${data.otEarnings > 0 ? `<tr><td style="border: 1px solid #cbd5e1; padding: 12px;"><strong>Overtime Earnings (${data.extraHours} hrs @ ₹${data.perHour.toFixed(2)}/hr)</strong></td><td style="border: 1px solid #cbd5e1; padding: 12px;"><strong>${data.otEarnings.toLocaleString('en-IN')}</strong></td><td style="border: 1px solid #cbd5e1; padding: 12px;"></td><td style="border: 1px solid #cbd5e1; padding: 12px;"></td></tr>` : ''}<tr><th style="border: 1px solid #cbd5e1; padding: 12px; background-color: #f1f5f9;">Total Gross Earnings</th><th style="border: 1px solid #cbd5e1; padding: 12px; background-color: #f1f5f9;">${(data.gross + data.otEarnings).toLocaleString('en-IN')}</th><th style="border: 1px solid #cbd5e1; padding: 12px; background-color: #f1f5f9;">Total Deductions</th><th style="border: 1px solid #cbd5e1; padding: 12px; background-color: #f1f5f9;">${data.deductions.toLocaleString('en-IN')}</th></tr></table><div style="font-size: 22px; font-weight: bold; color: #059669; text-align: right; padding: 15px; border: 2px solid #059669; background: #ecfdf5; border-radius: 8px;">NET PAYABLE SALARY: ₹${roundedNet.toLocaleString('en-IN')}<span style="font-size: 14px; font-weight: normal; color: #475569; margin-top: 8px; display:block;">(Rupees ${wordsNet})</span></div><div style="text-align: center; margin-top: 50px; font-size: 12px; color: #666; border-top: 1px solid #eee; padding-top: 20px;">This is a computer-generated payslip and does not require a physical signature.</div></div>`;
     }
     
     function downloadPayslip() { if(!currentPayslipHTML) return; let printDiv = document.getElementById('print-section'); if(!printDiv) { printDiv = document.createElement('div'); printDiv.id = 'print-section'; document.body.appendChild(printDiv); } printDiv.innerHTML = currentPayslipHTML; setTimeout(() => window.print(), 300); }
@@ -817,21 +810,91 @@
     async function saveAdminAtt() { await callGoogleAPI({action:'adminUpdateRecord', row: document.getElementById('edit-att-row').value, inTime: document.getElementById('edit-att-in').value, outTime: document.getElementById('edit-att-out').value, perm: document.getElementById('edit-att-perm').value, remarks: document.getElementById('edit-att-rem').value, user: currentUser.username}); closeModals(); loadHistory(); showToast("Record Updated"); }
     async function downloadCSV() { const m = document.getElementById('export-month').value; if (!m) return alert("Select month."); const res = await callGoogleAPI({action:'exportCSV', month: m}); const link = document.createElement('a'); link.href = 'data:text/csv;base64,' + res; link.download = 'Attendance_' + m + '.csv'; link.click(); }
     
-    // ⚠️ FIXED: Added proper Index passing for Users ⚠️
     async function loadAdminUsersData() { const data = await callGoogleAPI({action:'getAdminUsersData'}); adminUsersCache = data; let html = ''; data.forEach((u, idx) => { html += `<div class="card"><div class="edit-badge" onclick="openUserModal(${idx})">Edit</div><h4>${u.username}</h4><p>${u.role}</p></div>`; }); document.getElementById('admin-users-list').innerHTML = html; }
-    function openUserModal(idx) { document.getElementById('user-modal-error').innerText = ''; if(idx !== undefined && adminUsersCache[idx]) { const u = adminUsersCache[idx]; document.getElementById('user-row').value = u.rowIndex; document.getElementById('user-name').value = u.username; document.getElementById('user-role').value = u.role; document.getElementById('user-email').value = u.email; document.getElementById('user-pass').value = u.pass; document.getElementById('btn-del-user').style.display = 'block'; } else { ['user-row','user-name','user-role','user-email','user-pass'].forEach(id => document.getElementById(id).value = ''); document.getElementById('btn-del-user').style.display = 'none'; } document.getElementById('edit-user-modal').style.display = 'flex'; }
+    
+    // ⚠️ FIXED: Safely load Edit User Modal ⚠️
+    function openUserModal(idx) { 
+        document.getElementById('user-modal-error').innerText = ''; 
+        if(idx !== undefined && adminUsersCache[idx]) { 
+            const u = adminUsersCache[idx]; 
+            document.getElementById('user-row').value = u.rowIndex; 
+            document.getElementById('user-name').value = u.username; 
+            document.getElementById('user-role').value = u.role; 
+            document.getElementById('user-email').value = u.email; 
+            document.getElementById('user-pass').value = u.pass; 
+            document.getElementById('btn-del-user').style.display = 'block'; 
+        } else { 
+            ['user-row','user-name','user-role','user-email','user-pass'].forEach(id => document.getElementById(id).value = ''); 
+            document.getElementById('btn-del-user').style.display = 'none'; 
+        } 
+        document.getElementById('edit-user-modal').style.display = 'flex'; 
+    }
+    
     async function saveAdminUser() { await callGoogleAPI({action:'saveUser', row: document.getElementById('user-row').value, username: document.getElementById('user-name').value, role: document.getElementById('user-role').value, email: document.getElementById('user-email').value, pass: document.getElementById('user-pass').value}); closeModals(); loadAdminUsersData(); showToast("User Saved"); }
     async function deleteAdminUser() { if(confirm('Delete user?')) { await callGoogleAPI({action:'deleteUser', row: document.getElementById('user-row').value}); closeModals(); loadAdminUsersData(); showToast("User Deleted"); } }
     
-    // ⚠️ FIXED: Added proper Index passing for Employees ⚠️
     function loadAdminEmplData() { document.getElementById('empl-shift').innerHTML = shiftsData.map(s => `<option value="${s.name}">${s.name}</option>`).join(''); renderEnrollmentList(); }
-    function openEmplModal(idx) { document.getElementById('empl-modal-error').innerText = ''; if(idx !== undefined && employeeList[idx]) { const e = employeeList[idx]; document.getElementById('empl-row').value = e.rowIndex; document.getElementById('empl-id').value = e.id; document.getElementById('empl-name').value = e.name; document.getElementById('empl-shift').value = e.shift; document.getElementById('empl-category').value = e.category; document.getElementById('empl-leavebal').value = e.leaveBal; document.getElementById('empl-pin').value = e.pin; document.getElementById('empl-gross').value = e.gross; document.getElementById('empl-basic').value = e.basic; document.getElementById('empl-hra').value = e.hra; document.getElementById('empl-conv').value = e.conv; document.getElementById('empl-spl').value = e.spl; document.getElementById('empl-med').value = e.med; document.getElementById('empl-esi').value = e.esi; document.getElementById('empl-pf').value = e.pf; document.getElementById('empl-vpf').value = e.vpf; document.getElementById('empl-pt').value = e.pt; document.getElementById('btn-del-empl').style.display = 'block'; } else { ['empl-row','empl-id','empl-name','empl-pin','empl-gross','empl-basic','empl-hra','empl-conv','empl-spl','empl-med','empl-esi','empl-pf','empl-vpf','empl-pt'].forEach(id => document.getElementById(id).value = ''); document.getElementById('empl-leavebal').value = '0'; document.getElementById('btn-del-empl').style.display = 'none'; } document.getElementById('edit-empl-modal').style.display = 'flex'; }
-    async function saveAdminEmpl() { await callGoogleAPI({action:'saveEmpl', row: document.getElementById('empl-row').value, id: document.getElementById('empl-id').value, name: document.getElementById('empl-name').value, shift: document.getElementById('empl-shift').value, category: document.getElementById('empl-category').value, leavebal: document.getElementById('empl-leavebal').value, gross: document.getElementById('empl-gross').value, basic: document.getElementById('empl-basic').value, hra: document.getElementById('empl-hra').value, conv: document.getElementById('empl-conv').value, spl: document.getElementById('empl-spl').value, med: document.getElementById('empl-med').value, esi: document.getElementById('empl-esi').value, pf: document.getElementById('empl-pf').value, vpf: document.getElementById('empl-vpf').value, pt: document.getElementById('empl-pt').value, pin: document.getElementById('empl-pin').value}); closeModals(); fetchDataAndInitializeAI(); showToast("Employee Saved"); }
+    
+    // ⚠️ FIXED: Safely load Edit Employee Modal ⚠️
+    function openEmplModal(idx) { 
+        document.getElementById('empl-modal-error').innerText = ''; 
+        if(idx !== undefined && employeeList[idx]) { 
+            const e = employeeList[idx]; 
+            document.getElementById('empl-row').value = e.rowIndex; 
+            document.getElementById('empl-id').value = e.id; 
+            document.getElementById('empl-name').value = e.name; 
+            document.getElementById('empl-shift').value = e.shift; 
+            document.getElementById('empl-category').value = e.category; 
+            document.getElementById('empl-leavebal').value = e.leaveBal; 
+            document.getElementById('empl-pin').value = e.pin; 
+            document.getElementById('empl-gross').value = e.gross; 
+            document.getElementById('empl-basic').value = e.basic; 
+            document.getElementById('empl-hra').value = e.hra; 
+            document.getElementById('empl-conv').value = e.conv; 
+            document.getElementById('empl-spl').value = e.spl; 
+            document.getElementById('empl-med').value = e.med; 
+            document.getElementById('empl-esi').value = e.esi; 
+            document.getElementById('empl-pf').value = e.pf; 
+            document.getElementById('empl-vpf').value = e.vpf; 
+            document.getElementById('empl-pt').value = e.pt; 
+            document.getElementById('btn-del-empl').style.display = 'block'; 
+        } else { 
+            ['empl-row','empl-id','empl-name','empl-pin','empl-gross','empl-basic','empl-hra','empl-conv','empl-spl','empl-med','empl-esi','empl-pf','empl-vpf','empl-pt'].forEach(id => document.getElementById(id).value = ''); 
+            document.getElementById('empl-leavebal').value = '0'; 
+            document.getElementById('btn-del-empl').style.display = 'none'; 
+        } 
+        document.getElementById('edit-empl-modal').style.display = 'flex'; 
+    }
+    
+    async function saveAdminEmpl() { 
+        await callGoogleAPI({
+            action:'saveEmpl', 
+            row: document.getElementById('empl-row').value, 
+            id: document.getElementById('empl-id').value, 
+            name: document.getElementById('empl-name').value, 
+            shift: document.getElementById('empl-shift').value, 
+            category: document.getElementById('empl-category').value, 
+            leavebal: document.getElementById('empl-leavebal').value, 
+            gross: document.getElementById('empl-gross').value, 
+            basic: document.getElementById('empl-basic').value, 
+            hra: document.getElementById('empl-hra').value, 
+            conv: document.getElementById('empl-conv').value, 
+            spl: document.getElementById('empl-spl').value, 
+            med: document.getElementById('empl-med').value, 
+            esi: document.getElementById('empl-esi').value, 
+            pf: document.getElementById('empl-pf').value, 
+            vpf: document.getElementById('empl-vpf').value, 
+            pt: document.getElementById('empl-pt').value, 
+            pin: document.getElementById('empl-pin').value
+        }); 
+        closeModals(); fetchDataAndInitializeAI(); showToast("Employee Saved"); 
+    }
     async function deleteAdminEmpl() { if(confirm('Delete employee?')) { await callGoogleAPI({action:'deleteEmpl', row: document.getElementById('empl-row').value}); closeModals(); fetchDataAndInitializeAI(); showToast("Employee Deleted"); } }
     
     function openBulkModal() { document.getElementById('bulk-csv-input').value = ''; document.getElementById('bulk-empl-modal').style.display = 'flex'; }
     async function saveBulkEmpl() { const res = await callGoogleAPI({action:'bulkAddEmployees', csv: document.getElementById('bulk-csv-input').value}); closeModals(); fetchDataAndInitializeAI(); showToast(`Added ${res.count||0} Employees`); }
     
+    // ⚠️ FIXED: Dynamic Help Guide ⚠️
     function openTutorial() { 
         var activeSection = document.querySelector('.view-section.active');
         var activeMainTab = activeSection ? activeSection.id : 'view-entry';
