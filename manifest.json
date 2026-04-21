@@ -3,9 +3,15 @@
   "short_name": "Capco HR",
   "description": "Enterprise HR, Payroll, and Attendance System for Capco Capacitor",
 
-  "start_url": "/index.html",
+  "id": "./index.html",
+
+  "start_url": "./index.html",
+
+  "scope": "./",
 
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+
   "background_color": "#09090b",
   "theme_color": "#09090b",
   "orientation": "portrait-primary",
@@ -36,7 +42,7 @@
       "name": "Punch IN",
       "short_name": "IN",
       "description": "Open the attendance entry screen to punch in",
-      "url": "/index.html",
+      "url": "./index.html",
       "icons": [
         {
           "src": "https://i.postimg.cc/ZnP5N30s/launchericon_192x192.png",
@@ -49,7 +55,7 @@
       "name": "Punch OUT",
       "short_name": "OUT",
       "description": "Open the attendance entry screen to punch out",
-      "url": "/index.html",
+      "url": "./index.html",
       "icons": [
         {
           "src": "https://i.postimg.cc/ZnP5N30s/launchericon_192x192.png",
