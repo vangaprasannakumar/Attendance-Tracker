@@ -475,23 +475,10 @@
 
     
 <script>
-    // 1. currentUser declaration
-let currentUser = { username: '', role: '', token: '' };
-
-// 2. in handleLogin() — save the token
-safeSet('capco_attendance_user', JSON.stringify({
-  username: res.username, role: res.role, token: res.token
-}));
-
-// 3. top of callGoogleAPI() — inject credentials on every call
-if (currentUser && currentUser.token) {
-  payload._token = currentUser.token;
-  payload._u     = currentUser.username;
-}
     // ⚠️ PASTE YOUR GOOGLE API URL HERE ⚠️
     const GOOGLE_API_URL = "https://script.google.com/macros/s/AKfycbzsV8eP3nMkVUva7WwHkDKi820Mv0BEm0kTxxM__EamMerhKdhxQJKtVRA0mSI0_EjK/exec";
 
-    let currentUser = { username: '', role: '' };
+    let currentUser = { username: '', role: '', token: '' };
     let employeeList = []; let shiftsData = []; let historyData = []; let adminUsersCache = [];
     let modelsLoaded = false; let faceMatcher = null; let kioskInterval = null; let kioskTimer = null;
     let currentAction = 'in'; let recentlyPunched = []; let currentPayslipHTML = "";
@@ -698,7 +685,11 @@ if (currentUser && currentUser.token) {
             populateDropdowns(data.employees);
             safeSet('capco_empl_cache', JSON.stringify(data.employees));
             safeSet('capco_shifts_cache', JSON.stringify(data.shifts));
-
+            
+            if (currentUser && currentUser.token) {
+                payload._token = currentUser.token;
+                payload._u     = currentUser.username;
+                }
             if (currentUser.role === 'Employee') {
                 const me = employeeList.find(e =>
                     e.id.toString() === currentUser.username.toString() ||
@@ -1222,7 +1213,7 @@ if (currentUser && currentUser.token) {
             if (!navigator.onLine) {
                 let pending = JSON.parse(safeGet('capco_pending_punches') || '[]');
                 pending.push({ emplId: emp.id, emplName: emp.name, action: action, remarks: remarks, loggedByUser: currentUser.username, timestamp: new Date().toISOString(), shift: selectedShift });
-                safeSet('capco_pending_punches', JSON.stringify(pending));
+                safeSet('capco_attendance_user', JSON.stringify({username: res.username, role: res.role, token: res.token}));
                 showToast("💾 Saved Offline — will sync when back online", 'warn');
                 document.getElementById('entry-remarks').value = '';
                 document.getElementById('empl-search-input').value = '';
