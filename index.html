@@ -14,7 +14,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- [U1] face-api.js removed from <head>. It is now lazy-loaded only when the camera is
          first needed (kiosk or enrollment), so Admin/HR/Employee users never parse the 2.3 MB
-         library. The SW still pre-caches it so the lazy load is instant after first visit.  -->
+         library. The SW still pre-caches it so the lazy load is instant after first visit. -->
 
     <style>
         :root { --bg-dark: #09090b; --surface: #18181b; --surface-hover: #27272a; --border: #3f3f46; --text-main: #f4f4f5; --text-muted: #a1a1aa; --accent: #3b82f6; --accent-hover: #2563eb; --success: #10b981; --danger: #ef4444; --warning: #f59e0b; }
@@ -473,7 +473,6 @@
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
 </button>
 
-    
 <script>
     // ⚠️ PASTE YOUR GOOGLE API URL HERE ⚠️
     const GOOGLE_API_URL = "https://script.google.com/macros/s/AKfycbzsV8eP3nMkVUva7WwHkDKi820Mv0BEm0kTxxM__EamMerhKdhxQJKtVRA0mSI0_EjK/exec";
@@ -523,14 +522,40 @@
         }
     }
 
-    async function callGoogleAPI(payload) {
+async function callGoogleAPI(payload) {
+    try {
+
+        // 🔐 AUTO ATTACH TOKEN TO EVERY REQUEST
+        if (currentUser && currentUser.token) {
+            payload._token = currentUser.token;
+            payload._u     = currentUser.username;
+        }
+
+        const response = await fetch(GOOGLE_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload),
+            redirect: 'follow'
+        });
+
+        const rawText = await response.text();
+
         try {
-            const response = await fetch(GOOGLE_API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload), redirect: 'follow' });
-            const rawText = await response.text();
-            try { return JSON.parse(rawText); }
-            catch(e) { return { status: 'error', message: 'API Permission Error. Re-deploy Google Script as "Anyone".' }; }
-        } catch (error) { return { status: 'error', message: 'Network error or Google API offline.' }; }
+            return JSON.parse(rawText);
+        } catch(e) {
+            return {
+                status: 'error',
+                message: 'API Permission Error. Re-deploy Google Script as "Anyone".'
+            };
+        }
+
+    } catch (error) {
+        return {
+            status: 'error',
+            message: 'Network error or Google API offline.'
+        };
     }
+}
 
     function safeGet(key)      { try { return localStorage.getItem(key); }      catch(e) { return null; } }
     function safeSet(key, val) { try { localStorage.setItem(key, val); }         catch(e) {} }
@@ -628,50 +653,90 @@
     }
 
     // ─── APP START & LOGIN ───────────────────────────────────────────────────
-    function startApp() {
-        const savedStr = safeGet('capco_attendance_user');
-        if (savedStr) {
-            try {
-                currentUser = JSON.parse(savedStr);
-                document.getElementById('display-user').innerText = `Logged in as: ${currentUser.username} (${currentUser.role})`;
-                document.getElementById('login-container').style.display = 'none';
-                document.getElementById('main-app').style.display = 'block';
-                applyRolePermissions();
-                fetchDataAndInitializeAI();
-            } catch(e) { safeRemove('capco_attendance_user'); }
+function startApp() {
+    const savedStr = safeGet('capco_attendance_user');
+
+    if (savedStr) {
+        try {
+            currentUser = JSON.parse(savedStr);
+
+            // ✅ SAFETY (OLD USERS WITHOUT TOKEN)
+            if (!currentUser.token) currentUser.token = '';
+
+            document.getElementById('display-user').innerText =
+                `Logged in as: ${currentUser.username} (${currentUser.role})`;
+
+            document.getElementById('login-container').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
+
+            applyRolePermissions();
+            fetchDataAndInitializeAI();
+
+        } catch(e) {
+            safeRemove('capco_attendance_user');
         }
     }
+}
 
     // [E9] Login button is now disabled during the API call to prevent duplicate requests on double-tap
-    async function handleLogin() {
-        if (GOOGLE_API_URL === "YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE") return alert("Developer Error: Add API URL");
-        const u   = document.getElementById('login-user').value.trim();
-        const p   = document.getElementById('login-pass').value.trim();
-        const btn = document.getElementById('btn-login-submit');
-        const msg = document.getElementById('login-msg');
+async function handleLogin() {
+    if (GOOGLE_API_URL === "YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE")
+        return alert("Developer Error: Add API URL");
 
-        if (!u || !p) return msg.innerText = "Enter credentials";
-        btn.innerText = 'Verifying...';
-        btn.disabled  = true;  // [E9] Prevent concurrent requests
-        msg.innerText = '';
+    const u   = document.getElementById('login-user').value.trim();
+    const p   = document.getElementById('login-pass').value.trim();
+    const btn = document.getElementById('btn-login-submit');
+    const msg = document.getElementById('login-msg');
 
-        const res = await callGoogleAPI({ action: 'login', username: u, password: p });
+    if (!u || !p) return msg.innerText = "Enter credentials";
 
-        btn.disabled  = false; // [E9] Re-enable after call resolves
-        btn.innerText = 'Login';
+    btn.innerText = 'Verifying...';
+    btn.disabled  = true;
+    msg.innerText = '';
 
-        if (res.status === 'success') {
-            safeSet('capco_attendance_user', JSON.stringify({ username: res.username, role: res.role }));
-            startApp();
-        } else { msg.innerText = res.message; }
+    const res = await callGoogleAPI({
+        action: 'login',
+        username: u,
+        password: p
+    });
+
+    btn.disabled  = false;
+    btn.innerText = 'Login';
+
+    if (res.status === 'success') {
+
+        // ✅ STORE TOKEN ALSO
+        const userData = {
+            username: res.username,
+            role: res.role,
+            token: res.token || ''
+        };
+
+        currentUser = userData;
+        safeSet('capco_attendance_user', JSON.stringify(userData));
+
+        startApp();
+
+    } else {
+        msg.innerText = res.message;
     }
+}
 
-    function logout() {
-        safeRemove('capco_attendance_user'); currentUser = { username: '', role: '' };
-        document.getElementById('login-user').value = ''; document.getElementById('login-pass').value = '';
-        document.getElementById('main-app').style.display = 'none'; document.getElementById('login-container').style.display = 'block';
-        stopKioskMode(); stopEnrollment(); switchTab('entry');
-    }
+function logout() {
+    safeRemove('capco_attendance_user');
+
+    currentUser = { username: '', role: '', token: '' };
+
+    document.getElementById('login-user').value = '';
+    document.getElementById('login-pass').value = '';
+
+    document.getElementById('main-app').style.display = 'none';
+    document.getElementById('login-container').style.display = 'block';
+
+    stopKioskMode();
+    stopEnrollment();
+    switchTab('entry');
+}
 
     // ─── FETCH DATA ───────────────────────────────────────────────────────────
     // [U1] AI model loading is separated into loadAIModels() and called only for roles
@@ -685,11 +750,7 @@
             populateDropdowns(data.employees);
             safeSet('capco_empl_cache', JSON.stringify(data.employees));
             safeSet('capco_shifts_cache', JSON.stringify(data.shifts));
-            
-            if (currentUser && currentUser.token) {
-                payload._token = currentUser.token;
-                payload._u     = currentUser.username;
-                }
+
             if (currentUser.role === 'Employee') {
                 const me = employeeList.find(e =>
                     e.id.toString() === currentUser.username.toString() ||
@@ -1213,7 +1274,7 @@
             if (!navigator.onLine) {
                 let pending = JSON.parse(safeGet('capco_pending_punches') || '[]');
                 pending.push({ emplId: emp.id, emplName: emp.name, action: action, remarks: remarks, loggedByUser: currentUser.username, timestamp: new Date().toISOString(), shift: selectedShift });
-                safeSet('capco_attendance_user', JSON.stringify({username: res.username, role: res.role, token: res.token}));
+                safeSet('capco_pending_punches', JSON.stringify(pending));
                 showToast("💾 Saved Offline — will sync when back online", 'warn');
                 document.getElementById('entry-remarks').value = '';
                 document.getElementById('empl-search-input').value = '';
