@@ -2,7 +2,7 @@
 // [E12] Cache name is now split into a stable prefix + a date stamp.
 // On every deploy: update CACHE_DATE only. Grep for it, change one line, done.
 // The SW's activate handler deletes every cache whose name != CACHE_NAME,
-// so bumping this date guarantees all clients pick up the new build on next visit.
+// so bumping this date guarantees all clients pick up the new build on next visit..
 const CACHE_VERSION = 'capco-hrms-v5';
 const CACHE_DATE    = '20250421';           // ← bump this on every deploy
 const CACHE_NAME    = `${CACHE_VERSION}-${CACHE_DATE}`;
