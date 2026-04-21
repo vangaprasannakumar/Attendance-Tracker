@@ -522,40 +522,27 @@
         }
     }
 
-async function callGoogleAPI(payload) {
-    try {
-
-        // 🔐 AUTO ATTACH TOKEN TO EVERY REQUEST
-        if (currentUser && currentUser.token) {
+    async function callGoogleAPI(payload) {
+        // Attach session credentials to every call except login itself
+        if (payload.action !== 'login' && currentUser && currentUser.token) {
             payload._token = currentUser.token;
             payload._u     = currentUser.username;
         }
-
-        const response = await fetch(GOOGLE_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload),
-            redirect: 'follow'
-        });
-
-        const rawText = await response.text();
-
         try {
-            return JSON.parse(rawText);
-        } catch(e) {
-            return {
-                status: 'error',
-                message: 'API Permission Error. Re-deploy Google Script as "Anyone".'
-            };
-        }
-
-    } catch (error) {
-        return {
-            status: 'error',
-            message: 'Network error or Google API offline.'
-        };
+            const response = await fetch(GOOGLE_API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload), redirect: 'follow' });
+            const rawText = await response.text();
+            let parsed;
+            try { parsed = JSON.parse(rawText); }
+            catch(e) { return { status: 'error', message: 'API Permission Error. Re-deploy Google Script as "Anyone".' }; }
+            // If the backend rejects the token, force logout so the user sees the
+            // login screen immediately rather than a silent blank data panel
+            if (parsed && parsed.status === 'error' && parsed.message && parsed.message.includes('Session expired')) {
+                showToast('Session expired — please log in again.', 'error');
+                setTimeout(logout, 2000);
+            }
+            return parsed;
+        } catch (error) { return { status: 'error', message: 'Network error or Google API offline.' }; }
     }
-}
 
     function safeGet(key)      { try { return localStorage.getItem(key); }      catch(e) { return null; } }
     function safeSet(key, val) { try { localStorage.setItem(key, val); }         catch(e) {} }
@@ -653,90 +640,50 @@ async function callGoogleAPI(payload) {
     }
 
     // ─── APP START & LOGIN ───────────────────────────────────────────────────
-function startApp() {
-    const savedStr = safeGet('capco_attendance_user');
-
-    if (savedStr) {
-        try {
-            currentUser = JSON.parse(savedStr);
-
-            // ✅ SAFETY (OLD USERS WITHOUT TOKEN)
-            if (!currentUser.token) currentUser.token = '';
-
-            document.getElementById('display-user').innerText =
-                `Logged in as: ${currentUser.username} (${currentUser.role})`;
-
-            document.getElementById('login-container').style.display = 'none';
-            document.getElementById('main-app').style.display = 'block';
-
-            applyRolePermissions();
-            fetchDataAndInitializeAI();
-
-        } catch(e) {
-            safeRemove('capco_attendance_user');
+    function startApp() {
+        const savedStr = safeGet('capco_attendance_user');
+        if (savedStr) {
+            try {
+                currentUser = JSON.parse(savedStr);
+                document.getElementById('display-user').innerText = `Logged in as: ${currentUser.username} (${currentUser.role})`;
+                document.getElementById('login-container').style.display = 'none';
+                document.getElementById('main-app').style.display = 'block';
+                applyRolePermissions();
+                fetchDataAndInitializeAI();
+            } catch(e) { safeRemove('capco_attendance_user'); }
         }
     }
-}
 
     // [E9] Login button is now disabled during the API call to prevent duplicate requests on double-tap
-async function handleLogin() {
-    if (GOOGLE_API_URL === "YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE")
-        return alert("Developer Error: Add API URL");
+    async function handleLogin() {
+        if (GOOGLE_API_URL === "YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE") return alert("Developer Error: Add API URL");
+        const u   = document.getElementById('login-user').value.trim();
+        const p   = document.getElementById('login-pass').value.trim();
+        const btn = document.getElementById('btn-login-submit');
+        const msg = document.getElementById('login-msg');
 
-    const u   = document.getElementById('login-user').value.trim();
-    const p   = document.getElementById('login-pass').value.trim();
-    const btn = document.getElementById('btn-login-submit');
-    const msg = document.getElementById('login-msg');
+        if (!u || !p) return msg.innerText = "Enter credentials";
+        btn.innerText = 'Verifying...';
+        btn.disabled  = true;  // [E9] Prevent concurrent requests
+        msg.innerText = '';
 
-    if (!u || !p) return msg.innerText = "Enter credentials";
+        const res = await callGoogleAPI({ action: 'login', username: u, password: p });
 
-    btn.innerText = 'Verifying...';
-    btn.disabled  = true;
-    msg.innerText = '';
+        btn.disabled  = false; // [E9] Re-enable after call resolves
+        btn.innerText = 'Login';
 
-    const res = await callGoogleAPI({
-        action: 'login',
-        username: u,
-        password: p
-    });
-
-    btn.disabled  = false;
-    btn.innerText = 'Login';
-
-    if (res.status === 'success') {
-
-        // ✅ STORE TOKEN ALSO
-        const userData = {
-            username: res.username,
-            role: res.role,
-            token: res.token || ''
-        };
-
-        currentUser = userData;
-        safeSet('capco_attendance_user', JSON.stringify(userData));
-
-        startApp();
-
-    } else {
-        msg.innerText = res.message;
+        if (res.status === 'success') {
+            safeSet('capco_attendance_user', JSON.stringify({ username: res.username, role: res.role, token: res.token || '' }));
+            startApp();
+        } else { msg.innerText = res.message; }
     }
-}
 
-function logout() {
-    safeRemove('capco_attendance_user');
-
-    currentUser = { username: '', role: '', token: '' };
-
-    document.getElementById('login-user').value = '';
-    document.getElementById('login-pass').value = '';
-
-    document.getElementById('main-app').style.display = 'none';
-    document.getElementById('login-container').style.display = 'block';
-
-    stopKioskMode();
-    stopEnrollment();
-    switchTab('entry');
-}
+    function logout() {
+        safeRemove('capco_attendance_user'); currentUser = { username: '', role: '' };
+        document.getElementById('login-user').value = ''; document.getElementById('login-pass').value = '';
+        document.getElementById('main-app').style.display = 'none'; document.getElementById('login-container').style.display = 'block';
+        stopKioskMode(); stopEnrollment(); switchTab('entry');
+    }
 
     // ─── FETCH DATA ───────────────────────────────────────────────────────────
     // [U1] AI model loading is separated into loadAIModels() and called only for roles
