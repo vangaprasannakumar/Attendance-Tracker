@@ -473,7 +473,21 @@
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
 </button>
 
+    
 <script>
+    // 1. currentUser declaration
+let currentUser = { username: '', role: '', token: '' };
+
+// 2. in handleLogin() — save the token
+safeSet('capco_attendance_user', JSON.stringify({
+  username: res.username, role: res.role, token: res.token
+}));
+
+// 3. top of callGoogleAPI() — inject credentials on every call
+if (currentUser && currentUser.token) {
+  payload._token = currentUser.token;
+  payload._u     = currentUser.username;
+}
     // ⚠️ PASTE YOUR GOOGLE API URL HERE ⚠️
     const GOOGLE_API_URL = "https://script.google.com/macros/s/AKfycbzsV8eP3nMkVUva7WwHkDKi820Mv0BEm0kTxxM__EamMerhKdhxQJKtVRA0mSI0_EjK/exec";
 
