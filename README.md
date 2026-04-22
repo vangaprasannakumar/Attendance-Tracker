@@ -30,29 +30,29 @@
 Capco Master AI is a **Progressive Web App (PWA)** that runs entirely on Google infrastructure with zero recurring server costs. It replaces manual attendance registers and spreadsheet payroll with:
 
 - **AI facial recognition** for fraud-proof punch IN / OUT at a shared kiosk
-- **Offline-first** architecture so factory floor punches are never lost during internet drops
-- **Automated payroll engine** that calculates prorated salary, overtime, ESI, PF, VPF, and PT from live attendance data
+- **True Offline-first architecture** utilizing IndexedDB and the Background Sync API so factory floor punches are never lost, even if the browser tab is closed
+- **Automated payroll engine** that dynamically calculates prorated salary, overtime, ESI, PF, VPF, and PT based on mathematical calendar models
 - **One-click PDF payslips** printable directly from the app
-- **Multi-tier role access** for Admin, HR, Standby kiosk, and Employee self-service
+- **Multi-tier role access** securely authenticated via short-lived Session Tokens (Admin, HR, Standby kiosk, and Employee self-service)
 
-```
+```text
 ┌─────────────────────────────────────────────┐
-│              FACTORY FLOOR                   │
-│  Shared Tablet (Standby / Kiosk role)        │
-│  Face Recognition → Punch IN / OUT           │
+│              FACTORY FLOOR                  │
+│  Shared Tablet (Standby / Kiosk role)       │
+│  Face Recognition → Punch IN / OUT          │
 └────────────────┬────────────────────────────┘
                  │  HTTPS POST (JSON)
                  ▼
 ┌─────────────────────────────────────────────┐
-│         Google Apps Script (Code.gs)         │
-│  REST-like API · LockService · SHA-256 Auth  │
+│         Google Apps Script (Code.gs)        │
+│  REST-like API · LockService · SHA-256 Auth │
 └────────────────┬────────────────────────────┘
                  │  SpreadsheetApp read/write
                  ▼
 ┌─────────────────────────────────────────────┐
-│           Google Sheets (7 tabs)             │
-│  Data · Users · List_of_Empl · Shifts        │
-│  Audit_Log · H/S · OT_Empl                  │
+│            Google Sheets (8 tabs)           │
+│  Data · Users · List_of_Empl · Shifts       │
+│  Audit_Log · H/S · OT_Empl · Holidays       │
 └─────────────────────────────────────────────┘
 ```
 
@@ -62,95 +62,67 @@ Capco Master AI is a **Progressive Web App (PWA)** that runs entirely on Google 
 
 | Layer | Technology | Purpose |
 |---|---|---|
-| Frontend | HTML / CSS / Vanilla JS | Single-file PWA — no build step required |
-| AI | face-api.js (TinyFaceDetector) | Client-side facial recognition — no cloud API needed |
-| Backend | Google Apps Script (doPost) | REST-like API with script locking and SHA-256 auth |
-| Database | Google Sheets (7 tabs) | Zero-cost persistent storage with formula support |
-| Offline | Service Worker + localStorage | Cache-first shell; pending punches queue auto-syncs |
-| PDF | Browser `window.print()` | Payslip rendered to printable HTML; no PDF library needed |
+| Frontend | HTML / CSS / Vanilla JS | Single-file PWA — no build step required, responsive CSS transforms. |
+| AI | face-api.js (TinyFaceDetector) | Client-side facial recognition — no cloud API needed. |
+| Backend | Google Apps Script (doPost) | REST-like API with script locking, session tokens, and cache chunking. |
+| Database | Google Sheets (8 tabs) | Zero-cost persistent storage utilizing lightning-fast ArrayFormulas. |
+| Offline | Service Worker + IndexedDB | Stale-while-revalidate shell; pending punches background auto-sync. |
+| Export | Blob URLs & `window.print()` | Infinite-size CSV generation and PDF payslip rendering. |
 
 ---
 
 ## 3. File Structure
 
-```
+```text
 capco-hrms/
-├── index.html       # Entire frontend — UI, styles, and all JS logic
-├── manifest.json    # PWA manifest — icons, shortcuts, display config
-├── sw.js            # Service Worker — caching, offline fallback, bg sync
-└── Code.gs          # Google Apps Script backend — all API actions
+├── index.html       # Entire frontend — UI, styles, AI, and JS logic
+├── manifest.json    # PWA manifest — icons, intent-based shortcuts (?action=in)
+├── sw.js            # Service Worker — caching, offline fallback, bg sync, IDB
+└── Code.gs          # Google Apps Script backend — API actions and payroll math
 ```
 
-> All four files are the complete system. There are no dependencies to install,
-> no `node_modules`, no build pipeline.
+> All four files represent the complete system. There are no dependencies to install, no `node_modules`, and no build pipeline.
 
 ---
 
 ## 4. Feature Reference
 
 ### 4.1 Manual Attendance Entry
-- HR / Admin searches for an employee by name or ID using a live-filter dropdown
-- Selects **Punch IN**, **Punch OUT**, **Mark Permission**, or **Mark Leave**
-- Optional free-text remarks field for context
-- Live status badge shows the employee's current state (IN / OUT / LEAVE / Not Punched) before action
-- OT-category staff get a shift selector to override their default shift timing
+- HR / Admin searches for an employee using a debounced, lag-free live-filter dropdown.
+- Selects **Punch IN**, **Punch OUT**, **Mark Permission**, or **Mark Leave**.
+- Optional free-text remarks field for context.
+- Live status badge queries the database instantly to prevent duplicate punches.
+- OT-category staff get a shift selector to override default timings.
 
 ### 4.2 AI Face Recognition Kiosk
-- **Standby role** devices show only the kiosk UI — no other tabs visible
-- Admin selects IN or OUT; camera activates
-- `face-api.js TinyFaceDetector` scans every 600ms
-- Matched employee is punched automatically — no touch required
+- **Standby role** devices show only the kiosk UI.
+- Admin selects IN or OUT; camera activates (with mobile autoplay bypass).
+- `face-api.js TinyFaceDetector` scans every 150ms-600ms.
+- Matched employee is punched automatically — no touch required.
 - Text-to-speech announces: *"Thank you, [Name]. Punch IN successful."*
-- 120-second inactivity timer auto-closes the camera; resets after each punch
-- Unrecognised faces show a clear error; the person can retry after 5 seconds
+- 120-second inactivity timer auto-closes the camera.
 
 ### 4.3 Face Enrollment
-- Admin navigates to **Employees** tab, finds the employee card, taps **Enroll Face**
-- Camera opens; AI captures the face descriptor (128-float array) in real time
-- Descriptor is saved to column Q of `List_of_Empl` sheet via API
-- Face matcher rebuilds automatically — new employee is immediately recognisable
+- Admin finds the employee card, taps **Enroll Face**.
+- Camera captures 5 distinct 128-float descriptors to ensure high accuracy.
+- Descriptor is JSON-serialised and saved to column Q of `List_of_Empl`.
+- `CacheService` chunking handles massive AI data payloads smoothly.
 
-### 4.4 Offline Punch Queue
-- If the device has no internet, punches are stored in `localStorage` with a full ISO timestamp
-- A yellow toast confirms: *"Saved Offline — will sync when back online"*
-- The `online` browser event fires sync automatically on reconnect
-- Backend deduplicates by fingerprint `emplId|date|time|action` — replaying the queue never creates duplicate rows
-- Result toast shows synced / skipped counts
+### 4.4 True Offline Background Sync
+- If the factory loses internet, punches are saved directly to the browser's **IndexedDB**.
+- The Service Worker registers a `sync` event.
+- When the OS detects Wi-Fi—*even if the HRMS tab is closed*—the Service Worker wakes up, silently POSTs the punches to Google, and clears the local queue.
+- Backend deduplicates via fingerprint (`emplId|date|time|action`) to guarantee zero duplicate rows.
 
 ### 4.5 Attendance History
-- Search by **month**, **exact date**, or **employee name / ID** (or any combination)
-- Single-employee view renders a compact table with date, shift, IN, OUT, OT columns and a total OT footer
-- Multi-employee view renders cards
-- Admin and HR see an **Edit** button on every row (changes are written to `Audit_Log`)
+- Search by **month**, **exact date**, or **employee name / ID**.
+- Renders a compact table with total OT calculation.
+- Admin and HR see an **Edit** button on every row to fix mistakes safely (writes to `Audit_Log`).
 
-### 4.6 Payroll Engine
-- Admin selects an employee and a month → **Generate Report**
-- Engine reads attendance rows, counts present days, leaves, public holidays, and Sundays
-- Prorates all salary components against payable days
-- Calculates OT earnings: `(total OT hours) × (gross / working days / 8)`
-- Deductions: ESI (0.75% if gross ≤ ₹21,000), PF (12% of basic), VPF (fixed), PT (slab-based)
-- Renders full breakdown on screen and generates a print-ready payslip HTML
-
-### 4.7 PDF Payslips
-- **Download PDF Payslip** button writes the payslip HTML to a hidden `#print-section` div
-- `window.print()` opens the browser print dialog targeting only that section
-- Output is a clean A4 salary slip with company logo, earnings table, deductions, and net pay in words
-
-### 4.8 Admin Leave Assignment
-- Admin picks employee + date + reason → **Mark as Leave**
-- Writes `LEAVE` to both IN and OUT columns on the Data sheet
-- Deducts 1.0 from the employee's leave balance in `List_of_Empl`
-- Audited in `Audit_Log`
-
-### 4.9 Admin Dashboard
-- Live count of: Total Staff, Present, Currently IN, Punched OUT, On Leave, Late Arrivals
-- Late arrival = punch IN time is after shift start time
-- **Export CSV** downloads the full month's attendance as a `.csv` file (base64-decoded in browser)
-
-### 4.10 Employee Self-Service (ESS)
-- Employees log in with their Employee ID as username
-- Can view their own attendance history
-- Can generate and download their own payslip for any month
+### 4.6 Salary Engine & Blob Export
+- Computes perfect payroll logic including Ghost-Sunday-proof calendar mathematics.
+- Generates beautiful HTML payslips.
+- **Export CSV** utilizes a Blob URL string to bypass browser size limits, allowing infinite-scale data downloads without crashing.
 
 ---
 
@@ -173,12 +145,9 @@ capco-hrms/
 
 | Col | A | B | C | D | E | F | G | H | I | J | K | L | M | N | O |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| **Field** | Date | Day | Empl ID | Name | Shift | Shift Start | IN Time | *(spare)* | OUT Time | Total Hours | OT Hours | Permission | Remarks | Logged By | Flags |
+| **Field** | Date | Day | Empl ID | Name | Shift | Shift Start | IN Time | Shift End | OUT Time | Tot. Hrs | OT Hrs | Perm. | Remarks | Logged By | Flags |
 
-> Columns J and K contain live formulas written by `applyFormulas()` in Code.gs.
-> Column O stores processing flags like `SOT_BONUS_ADDED`.
-
----
+> Columns J and K utilize high-performance `ARRAYFORMULA` in Row 1. Do not overwrite cells below Row 1 in these columns.
 
 ### Tab: `List_of_Empl` (Employee Master)
 
@@ -188,47 +157,13 @@ capco-hrms/
 
 > Column Q holds the JSON-serialised 128-float face descriptor. Leave blank until the employee is enrolled.
 
----
-
 ### Tab: `Users` (App Logins)
 
 | Col | A | B | C | D |
 |---|---|---|---|---|
 | **Field** | Username | Role | Email | Password (SHA-256) |
 
----
-
-### Tab: `Shifts`
-
-| Col | A | B | C |
-|---|---|---|---|
-| **Field** | Shift Name | Start Time | End Time |
-
----
-
-### Tab: `H/S` (Holiday / Sunday Config)
-
-| Col | A | B | C |
-|---|---|---|---|
-| **Field** | Month Name | Working Days | Public Holidays |
-
----
-
-### Tab: `OT_Empl` (OT Gross Override)
-
-| Col | A | B | C |
-|---|---|---|---|
-| **Field** | Employee ID | Name | OT Gross (override) |
-
-> Used when an employee's OT rate should differ from their standard gross. Leave blank to use gross from `List_of_Empl`.
-
----
-
-### Tab: `Audit_Log`
-
-| Col | A | B | C | D | E | F |
-|---|---|---|---|---|---|---|
-| **Field** | Timestamp | Admin User | Empl ID | Empl Name | Old Values | New Values |
+*(Tabs for `Shifts`, `H/S`, `OT_Empl`, `Audit_Log`, and `List of Holidays` remain standard).*
 
 ---
 
@@ -253,15 +188,16 @@ capco-hrms/
 1. In your Google Sheet, go to **Extensions → Apps Script**
 2. Delete the default `myFunction()` code
 3. Paste the full contents of `Code.gs`
-4. Click **Deploy → New Deployment**
-5. Set type to **Web App**
-6. Set **Execute as**: Me
-7. Set **Who has access**: Anyone
-8. Copy the generated Web App URL
+4. Set your Script Properties: Add `APP_SECRET` for token generation.
+5. Click **Deploy → New Deployment**
+6. Set type to **Web App**
+7. Set **Execute as**: Me
+8. Set **Who has access**: Anyone
+9. Copy the generated Web App URL
 
-### Step 3 — Add the API URL to index.html
+### Step 3 — Add the API URL to index.html & sw.js
 
-Open `index.html` and replace the placeholder on this line:
+Open `index.html` and `sw.js` and replace the placeholder on this line:
 
 ```javascript
 const GOOGLE_API_URL = "YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE";
@@ -287,8 +223,6 @@ Upload `index.html`, `manifest.json`, and `sw.js` to any static host:
 - **Google Sites** — embed via raw HTML widget
 - **Any web server** — copy the three files to the document root
 
-> The files have zero external build dependencies. No npm, no webpack, no framework.
-
 ### Step 6 — Add shifts and employees
 
 1. Log in as Admin
@@ -302,53 +236,28 @@ Upload `index.html`, `manifest.json`, and `sw.js` to any static host:
 
 Run this checklist on every update:
 
-- [ ] Updated `CACHE_NAME` date in `sw.js` (e.g. `capco-hrms-v4-20250502`)
+- [ ] Updated `CACHE_DATE` in `sw.js` (e.g. `20260422` forces clients to download the new build)
 - [ ] Re-deployed Google Apps Script as **New Deployment → Anyone**
-- [ ] Updated `GOOGLE_API_URL` in `index.html` if a new script deployment was created
+- [ ] Updated `GOOGLE_API_URL` in `index.html` and `sw.js` if a new script deployment was created
 - [ ] Pushed updated files to the hosting location
-- [ ] Hard-refreshed on one device to confirm SW updated (check DevTools → Application → Service Workers)
+- [ ] Ensured `ARRAYFORMULA` is pasted in `Data` sheet cells J1 and K1
 - [ ] Tested Punch IN and Punch OUT on a real device before announcing to staff
 
 ---
 
 ## 9. Offline & Sync Behaviour
 
-```
-Device goes offline
-       │
-       ▼
-submitAttendance() detects !navigator.onLine
-       │
-       ▼
-Punch saved to localStorage as:
-{ emplId, emplName, action, remarks, loggedByUser, timestamp (ISO), shift }
-       │
-       ▼
-Yellow toast: "Saved Offline — will sync when back online"
-       │
-Device comes back online
-       │
-       ▼
-window 'online' event fires in index.html
-       │
-       ▼
-callGoogleAPI({ action: 'syncOfflineData', pending: [...] })
-       │
-       ▼
-Code.gs builds fingerprint Set from existing sheet rows:
-"emplId|dd-MM-yyyy|HH:mm|action"
-       │
-       ├── Fingerprint exists → skip (duplicate)
-       └── New fingerprint → logAttendance() → add to Set
-       │
-       ▼
-Returns { synced: N, skipped: M }
-localStorage cleared
-Toast shows result
-```
+Because factories frequently suffer from internet drops, the system is designed to be indestructible offline.
+
+1. Device goes offline.
+2. `submitAttendance()` writes the punch to **IndexedDB**.
+3. A `sync-punches` tag is registered with the OS via `SyncManager`.
+4. Even if the user minimizes the browser, when the OS regains Wi-Fi, it wakes up `sw.js`.
+5. `sw.js` reads IndexedDB and POSTs the payload to `Code.gs`.
+6. `Code.gs` checks fingerprints (`emplId|date|time|action`). It drops duplicates and commits the fresh punches.
 
 **Background Sync (Chrome / Android only):**
-The Service Worker also registers a `sync` event listener for the tag `sync-punches`. The browser fires this even when the app tab is closed, providing a second layer of sync assurance on supported platforms.
+The Service Worker registers a `sync` event listener. The browser fires this even when the app tab is closed, providing a second layer of sync assurance on supported platforms.
 
 ---
 
@@ -367,27 +276,22 @@ Three sub-models are loaded:
 
 ### Matching
 - `FaceMatcher` threshold: **0.55** (lower = stricter; range 0–1)
-- A descriptor distance below 0.55 is treated as a confirmed match
 - Descriptors are stored as JSON arrays in column Q of `List_of_Empl`
 
 ### Enrollment flow
 1. Camera opens
 2. `detectSingleFace()` runs in a loop every 600ms
-3. First clear detection captures the descriptor
+3. Camera captures 5 distinct 128-float descriptors to ensure high accuracy
 4. Descriptor is JSON-stringified and POSTed to `saveFaceData`
 5. Sheet is updated; `buildFaceMatcher()` rebuilds the matcher in memory
-
-### Kiosk scan loop
-- Scans every **600ms**
-- `recentlyPunched[]` prevents the same person being logged twice in one session
-- On error response from the server, the person is removed from `recentlyPunched` after **5 seconds** so they can retry
-- Timer resets to **120 seconds** after each successful punch
 
 ---
 
 ## 11. Payroll Engine Logic
 
-```
+The engine does not rely on flawed database lookups to determine calendar days. It utilizes an internal JavaScript loop to calculate exact Sundays and month days mathematically.
+
+```text
 Payable Days = Present Days + Public Holidays + Sundays in month
 (capped at total working days in month)
 
@@ -416,42 +320,18 @@ Net Pay = Prorated Gross + OT Earnings − (ESI + PF + VPF + PT)
 | Staff With OT | ✅ | ❌ |
 | Staff With SOT | ✅ | ✅ (+0.5 leave if ≥ 12 hrs worked) |
 
-### OT Formula (Google Sheets column K)
-
-```
-=IF(OR(G="", I="", G="LEAVE"), "",
-  LET(
-    tMins, MOD(I-G,1)*1440,
-    bMins, IF(OR(B="Sunday", COUNTIF('List of Holidays'!$A:$A, A)>0),
-              30,
-              IF(tMins>=720, 480, 510)),
-    otMins, tMins - bMins,
-    IF(otMins>0,
-       IF(INT((otMins+5)/30)*30 > 0,
-          INT((otMins+5)/30)*30/1440,
-          ""),
-       "")
-  )
-)
-```
-
-OT is rounded to the nearest 30-minute slot. Sunday/holiday baseline is 30 minutes; weekday baseline is 480 min (8 hrs) for shifts ≥ 720 min or 510 min otherwise.
-
 ---
 
 ## 12. Security Model
 
 | Layer | Mechanism |
 |---|---|
-| Authentication | SHA-256 hashed passwords stored in `Users` sheet; plain-text auto-upgraded on first login |
+| Authentication | Passwords upgraded to SHA-256 hashes on first login. |
+| Session Tokens | `Code.gs` issues a 6-hour expiring token stored in `CacheService`. All destructive API calls require a validated token. |
 | Concurrency | `LockService.waitLock(15000)` in `doPost` — prevents race conditions on simultaneous punches |
 | Role enforcement | Backend validates `callerRole` before `deleteEmpl` and `deleteUser` actions |
 | Audit trail | All admin edits and deletions written to `Audit_Log` with timestamp + username |
-| API exposure | Google Apps Script URL is public but unauthenticated requests return no sensitive data without a valid `action` payload |
 | Password visibility | `getAdminUsersData()` returns `***` for all password fields — hashes never reach the browser |
-| Offline deduplication | Fingerprint-based Set prevents replay attacks from offline queue |
-
-> **Note:** The `GOOGLE_API_URL` is visible in `index.html` source. Anyone who finds it can call the API directly. The security boundary is the `verifyLogin` action — all destructive actions require a verified `callerRole` passed from the frontend, which is only available after a successful login session. For higher security, consider adding a per-session token.
 
 ---
 
@@ -462,36 +342,29 @@ OT is rounded to the nearest 30-minute slot. Sunday/holiday baseline is 30 minut
 | 1 | Google Apps Script has a **6-minute execution limit** per request — large `exportCSV` calls on very long history may time out | Export by month, not full history |
 | 2 | `face-api.js` accuracy drops in poor lighting or with glasses/masks | Use good lighting at the kiosk; re-enroll with glasses if needed |
 | 3 | iOS Safari does not support the **Background Sync API** | The `online` event listener in `index.html` covers iOS; punch still syncs when the user opens the app |
-| 4 | Google Sheets has a **10 million cell limit** — with 50 employees punching twice daily, the Data sheet grows ~36,500 rows/year | Archive old months to a separate sheet annually |
-| 5 | `GOOGLE_API_URL` is visible in page source | Acceptable for internal factory deployment; add token auth for public-facing use |
-| 6 | Icons are hosted on `postimg.cc` | Self-host icons in the same repo for production reliability |
+| 4 | Google Sheets has a **10 million cell limit** | Archive old months to a separate sheet annually |
+| 5 | ArrayFormula Space | Google Sheets `ARRAYFORMULA` will break if there is manual text entered below row 1 in the J/K columns. |
 
 ---
 
 ## 14. Upgrade History
 
-### v4 — Current (Critical & Important fixes)
+### v6 — Current (Enterprise Refactor)
+- **IndexedDB Sync:** `localStorage` replaced with IDB. Service worker now syncs punches seamlessly while closed.
+- **Session Tokens:** Complete backend lock-down using `CacheService` validation keys.
+- **Ghost Sunday Fix:** Month-looping logic added to ensure un-punched Sundays are properly credited for payroll.
+- **Blob CSV Export:** Base64 Data URI replaced with Blob Object URLs to allow infinite-scale data downloads.
+- **Cache Chunking:** AI Descriptors exceeding Google's 100KB limit are now sliced, cached, and reassembled transparently.
+- **CSS Transform Zoom:** Zoom controls rebuilt for flawless scaling across fixed-position grids.
+- **ArrayFormulas:** Heavy scripting removed from backend sheet loops to maximize speed.
+- **Safe CSVs:** Escaped quotes added to Remarks to prevent spreadsheet injection breaks.
+- **Manifest Intents:** `?action=in` shortcut parameters open kiosk states dynamically.
 
-| Fix | File | Description |
-|---|---|---|
-| C1 | sw.js | `skipWaiting()` + `clients.claim()` — SW updates apply immediately on 24/7 kiosk |
-| C2 | index.html | `online` event listener triggers `syncOfflineData` automatically on reconnect |
-| C3 | Code.gs | `syncOfflineData` fingerprint deduplication — replaying queue never creates duplicates |
-| C4 | Code.gs + index.html | `deleteEmpl` / `deleteUser` gated by role check; deletions audited |
-| I1 | index.html | `hardRefreshApp` now calls `buildFaceMatcher()` — new enrollments activate immediately |
-| I2 | index.html | Kiosk 120s timer resets after each successful punch |
-| I3 | index.html | `recentlyPunched` cleared after 5s on error — retry without restarting session |
-| I4 | Code.gs | Sunday counting uses a `Set` of unique dates — no more per-record double-counting |
-| I5 | sw.js | `.catch(() => {})` replaced with proper `Response` objects; face-api.js pre-cached |
-| I6 | manifest.json | 512px icon has separate `any` + `maskable` entries; `start_url` made absolute |
-| I7 | index.html | `confirm()` dialog before marking leave from Entry tab |
-
-### v3 — Previous
-- Offline punch queue with `localStorage`
-- SHA-256 password hashing with plain-text auto-upgrade
+### v4 / v5 — Legacy
 - Script lock concurrency protection
-- AI kiosk with TinyFaceDetector
 - PDF payslip via `window.print()`
+- Basic offline queueing
+- SHA-256 implementation
 
 ---
 
@@ -508,7 +381,7 @@ OT is rounded to the nearest 30-minute slot. Sunday/holiday baseline is 30 minut
 ---
 
 **Offline punches not syncing**
-→ Check `localStorage` in DevTools → Application → Local Storage for key `capco_pending_punches`. If it has data, reload the app while online. If the key is missing, the punch was never saved — check if the device was truly offline or if the API returned an error.
+→ Check `IndexedDB` in DevTools → Application → IndexedDB for `CapcoOfflineDB`. If it has data, reload the app while online. If it is empty, the punch was never saved — check if the device was truly offline or if the API returned an error.
 
 ---
 
@@ -518,7 +391,7 @@ OT is rounded to the nearest 30-minute slot. Sunday/holiday baseline is 30 minut
 ---
 
 **Service Worker not updating after deploy**
-→ Open DevTools → Application → Service Workers → click **Update** or **Skip Waiting**. Ensure you bumped `CACHE_NAME` in `sw.js` before deploying.
+→ Open DevTools → Application → Service Workers → click **Update** or **Skip Waiting**. Ensure you bumped `CACHE_DATE` in `sw.js` before deploying.
 
 ---
 
@@ -528,3 +401,4 @@ OT is rounded to the nearest 30-minute slot. Sunday/holiday baseline is 30 minut
 ---
 
 *Built for Capco Capacitor, Muppireddypally, Telangana.*
+```
