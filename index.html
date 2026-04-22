@@ -717,7 +717,7 @@
     let currentUser = { username: '', role: '', token: '' };
     let employeeList = []; let shiftsData = []; let historyData = []; let adminUsersCache = [];
     let modelsLoaded = false; let faceMatcher = null; let kioskInterval = null; let kioskTimer = null;
-    let currentAction = 'in'; let recentlyPunched = []; let currentPayslipHTML = "";
+    let currentAction = 'in'; let recentlyPunched = []; let currentPayslipHTML = ""; let currentPayslipTitle = "";
     let activeEnrollId = null; let myEmplId = null;
     let consecutiveMatchId = null; let consecutiveMatchCount = 0;
 
@@ -1377,6 +1377,7 @@
     // ── PAYSLIP ──
     function renderPayslipToDiv(data, targetDivId) {
         currentPayslipHTML='';
+        currentPayslipTitle = `Payslip ${data.month} ${data.year} ${data.emplName}`;
         const resDiv=document.getElementById(targetDivId);
         if (data.status==='error'||data.error) return resDiv.innerHTML=`<p style="color:var(--danger);text-align:center;">${safeStr(data.message||data.error)}</p>`;
         let roundedNet=Math.round(data.netPay), wordsNet=numberToWords(roundedNet);
@@ -1404,8 +1405,17 @@
     function downloadPayslip() {
         if (!currentPayslipHTML) return;
         showToast("Opening print dialog...");
-        document.getElementById('print-section').innerHTML=currentPayslipHTML;
-        setTimeout(()=>window.print(),500);
+        document.getElementById('print-section').innerHTML = currentPayslipHTML;
+        
+        // Temporarily change the page title to set the PDF file name
+        const originalTitle = document.title;
+        document.title = currentPayslipTitle; 
+        
+        setTimeout(() => { 
+            window.print(); 
+            // Restore the original app title after the print dialog opens
+            document.title = originalTitle; 
+        }, 500);
     }
 
     // ── HISTORY ──
