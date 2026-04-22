@@ -19,7 +19,6 @@
             --ease: cubic-bezier(0.4, 0, 0.2, 1);
         }
         * { box-sizing: border-box; }
-        /* Removed zoom from body to fix Firefox/Layout issues. Handled via transform on containers now. */
         body { font-family: 'Outfit', sans-serif; color: var(--text-main); margin: 0; background: var(--bg-dark); min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 15px; overflow-x: hidden; width: 100vw; touch-action: manipulation; transition: background 0.3s var(--ease); }
         ::-webkit-scrollbar { width: 5px; height: 5px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
         ::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; opacity: 0.6; }
@@ -124,9 +123,9 @@
         .app-container { background:rgba(24,24,27,0.7); backdrop-filter:blur(24px); border:1px solid rgba(128,128,128,0.2); width:100%; max-width:500px; border-radius:24px; box-shadow:0 28px 56px -12px rgba(0,0,0,0.7); display:none; animation:slideUpFade 0.5s var(--ease); overflow:hidden; margin-bottom:30px; transition: transform 0.2s ease-out; }
         body.is-logged-in .app-container { display: block; }
         
-        /* [FIX] Extra padding-bottom ensures dropdowns aren't clipped on mobile */
+        /* [FIX] Desktop Vanishing Solved: Active state explicitly receives opacity 1 and animation-fill-mode forwards */
         .view-section { padding:22px; display:none; opacity:0; transform:translateX(10px); padding-bottom:calc(150px + var(--mobile-nav-h)); }
-        .view-section.active { display:block; animation:slideIn 0.28s var(--ease) forwards; }
+        .view-section.active { display:block; opacity:1; transform:translateX(0); animation:slideIn 0.28s var(--ease) forwards; }
 
         /* ── ACTION BUTTONS ── */
         .btn-grid   { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:18px; }
@@ -189,7 +188,7 @@
         .zoom-btn:hover { background:rgba(128,128,128,0.2); color:var(--text-main); }
         #zoom-display { font-size:12px; font-weight:600; color:var(--text-muted); min-width:36px; text-align:center; }
         
-        /* [FIX] Light mode proper contrast */
+        /* Light mode proper contrast */
         body.light-mode { --bg-dark:#f1f5f9; --surface:#ffffff; --surface-hover:#f8fafc; --border:#e2e8f0; --text-main:#0f172a; --text-muted:#64748b; --sidebar-bg:#ffffff; }
         body.light-mode .app-container { background:var(--surface); border:1px solid var(--border); box-shadow:0 10px 30px rgba(0,0,0,0.05); }
         body.light-mode #desktop-topbar { background:rgba(255,255,255,0.95); border-bottom:1px solid var(--border); }
@@ -249,9 +248,11 @@
             body.is-logged-in #mobile-header-wrapper { display:none; }
             body.is-logged-in #mobile-bottom-nav { display:none !important; }
             #scrollToTopBtn { bottom:24px; right:28px; }
-            /* [FIX] Normal padding on desktop, no clipping issues */
-            .view-section { padding:28px 36px; overflow-y:auto; flex:1; min-height:0; padding-bottom:28px; }
-            .view-section.active { display:block; overflow-y:auto; animation:fadeIn 0.2s var(--ease); }
+            
+            /* [FIX] Desktop Vanishing Solved: Opacity explicitly set, reset transform, and `forwards` added to active state */
+            .view-section { padding:28px 36px; flex:1; min-height:0; padding-bottom:28px; opacity:0; transform:none; }
+            .view-section.active { display:block; opacity:1; overflow-y:auto; animation:fadeIn 0.2s var(--ease) forwards; }
+            
             .stats-grid { grid-template-columns:repeat(3,1fr); }
             body.is-logged-in .modal { left:var(--sidebar-w); width:calc(100% - var(--sidebar-w)); }
             .history-table { font-size:13px; }
@@ -273,8 +274,11 @@
             #desktop-topbar { display:flex; }
             #mobile-header-wrapper { display:none; }
             #mobile-bottom-nav { display:none !important; }
-            .view-section { padding:22px 24px; padding-bottom:22px; }
-            .view-section.active { display:block; overflow-y:auto; flex:1; min-height:0; }
+            
+            /* [FIX] Same opacity fix applied to tablet view */
+            .view-section { padding:22px 24px; padding-bottom:22px; opacity:0; transform:none; }
+            .view-section.active { display:block; opacity:1; overflow-y:auto; flex:1; min-height:0; animation:fadeIn 0.2s var(--ease) forwards; }
+            
             .modal { left:68px; width:calc(100% - 68px); }
             .stats-grid { grid-template-columns:repeat(3,1fr); }
         }
@@ -938,7 +942,7 @@
         if (savedStr) {
             try {
                 currentUser = JSON.parse(savedStr);
-                document.body.classList.add('is-logged-in'); // FIX: CSS unhides app-container, hides login-container safely
+                document.body.classList.add('is-logged-in'); 
                 applyRolePermissions();
                 fetchDataAndInitializeAI();
             } catch(e) { localStorage.removeItem('capco_attendance_user'); }
@@ -1083,7 +1087,6 @@
         try {
             video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode:'user', width:{ideal:640}, height:{ideal:480} } });
             
-            // FIX: Mobile autoplay block handler
             video.play().catch(e => {
                 status.className = 'status-error'; 
                 status.innerText = "Tap screen to allow camera play.";
@@ -1166,7 +1169,6 @@
             video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode:'user', width:{ideal:640}, height:{ideal:480} } });
             status.innerText = `Look directly at the camera. Capturing 0/${TARGET_SAMPLES}...`;
             
-            // FIX: Mobile autoplay block handler
             video.play().catch(e => {
                 status.className = 'status-error'; 
                 status.innerText = "Tap screen to allow camera play.";
@@ -1222,7 +1224,6 @@
             let hasVisible = false;
             list.style.display = 'block';
             for (let i=0; i<items.length; i++) { 
-                // FIX: Safe split to prevent quick jump errors
                 const textVal = items[i].dataset.text || '';
                 const namePart = textVal.includes(' - ') ? textVal.split(' - ')[1].toLowerCase() : textVal.toLowerCase();
                 const idPart = (items[i].dataset.id || '').toLowerCase();
@@ -1304,7 +1305,6 @@
             if (emp.category==='Staff With OT') { const ss=document.getElementById('entry-shift-select'); if (ss&&ss.value) selectedShift=ss.value; }
             
             if (!navigator.onLine) {
-                // FIX: Use true IndexedDB background sync instead of LocalStorage
                 await savePendingPunch({
                     _token: currentUser.token, _u: currentUser.username,
                     emplId: emp.id, emplName: emp.name, action, remarks,
@@ -1368,7 +1368,7 @@
         const resDiv=document.getElementById(targetDivId);
         if (data.status==='error'||data.error) return resDiv.innerHTML=`<p style="color:var(--danger);text-align:center;">${safeStr(data.message||data.error)}</p>`;
         let roundedNet=Math.round(data.netPay), wordsNet=numberToWords(roundedNet);
-        resDiv.innerHTML=`<div class="emp-dash-box" style="border-color:var(--accent);"><h4>🧑‍💼 ${safeStr(data.emplName)} <span style="float:right;font-size:11px;color:var(--text-muted);font-weight:400;">(${safeStr(data.category)})</span></h4><div class="emp-dash-row">Leave Balance: <span>${data.leaveBal}</span></div><div class="emp-dash-row">Month: <span>${safeStr(data.month)}</span></div></div><div class="emp-dash-box"><h4>📅 Attendance Summary</h4><div class="emp-dash-row">Present Days: <span style="color:var(--success);">${data.present}</span></div><div class="emp-dash-row">Leaves: <span style="color:var(--danger);">${data.leaves}</span></div><div class="emp-dash-row">Public Holidays / Sun: <span>${data.ph}</span></div><div class="emp-dash-row" style="border-top:1px solid rgba(128,128,128,0.1);padding-top:5px;">Payable Days: <span>${data.payableDays}</span></div></div>${(data.category==='Staff With OT'||data.category==='Staff With SOT')?`<div class="emp-dash-box"><h4>⏱️ Overtime</h4><div class="emp-dash-row">Extra Hours: <span>${data.extraHours} hrs</span></div><div class="emp-dash-row">Per Hour: <span>₹${data.perHour.toFixed(2)}</span></div><div class="emp-dash-row">OT Earnings: <span style="color:var(--success);">+ ₹${data.otEarnings.toFixed(2)}</span></div></div>`:''}<div class="emp-dash-box"><h4>💸 Earnings</h4><div class="emp-dash-row">Fixed Gross: <span>₹${data.actualGross.toLocaleString('en-IN')}</span></div><div class="emp-dash-row">Prorated Gross: <span>₹${data.gross.toLocaleString('en-IN')}</span></div><div class="emp-dash-row" style="font-size:12px;color:var(--text-muted);">Basic: ₹${data.basic.toLocaleString('en-IN')} | HRA: ₹${data.hra.toLocaleString('en-IN')}</div><div class="emp-dash-row" style="font-size:12px;color:var(--text-muted);">Conv: ₹${data.conv.toLocaleString('en-IN')} | Spl: ₹${data.spl.toLocaleString('en-IN')} | Med: ₹${data.med.toLocaleString('en-IN')}</div></div><div class="emp-dash-box"><h4>📉 Deductions</h4><div class="emp-dash-row" style="font-size:12px;color:var(--text-muted);">ESI: ₹${data.esi.toLocaleString('en-IN')} | PF: ₹${data.pf.toLocaleString('en-IN')} | VPF: ₹${data.vpf.toLocaleString('en-IN')} | PT: ₹${data.pt.toLocaleString('en-IN')}</div><div class="emp-dash-row" style="border-top:1px solid rgba(128,128,128,0.1);padding-top:5px;margin-top:5px;">Total Deductions: <span style="color:var(--danger);">- ₹${data.deductions.toLocaleString('en-IN')}</span></div></div><div class="emp-dash-box" style="background:rgba(16,185,129,0.1);border-color:var(--success);margin-bottom:5px;"><div class="emp-dash-row" style="margin-bottom:0;"><span style="font-size:15px;">NET PAYOUT</span><span class="emp-dash-highlight">₹${roundedNet.toLocaleString('en-IN')}</span></div></div><div class="emp-dash-words">(Rupees ${wordsNet})</div><button class="btn-main" style="background:#2563eb;" onclick="downloadPayslip()">🖨️ Download PDF Payslip</button>`;
+        resDiv.innerHTML=`<div class="emp-dash-box" style="border-color:var(--accent);"><h4>🧑‍💼 ${safeStr(data.emplName)} <span style="float:right;font-size:11px;color:var(--text-muted);font-weight:400;">(${safeStr(data.category)})</span></h4><div class="emp-dash-row">Leave Balance: <span>${data.leaveBal}</span></div><div class="emp-dash-row">Month: <span>${safeStr(data.month)}</span></div></div><div class="emp-dash-box"><h4>📅 Attendance Summary</h4><div class="emp-dash-row">Present Days: <span style="color:var(--success);">${data.present}</span></div><div class="emp-dash-row">Leaves: <span style="color:var(--danger);">${data.leaves}</span></div><div class="emp-dash-row">Public Holidays / Sun: <span>${data.ph}</span></div><div class="emp-dash-row" style="border-top:1px solid rgba(128,128,128,0.2);padding-top:5px;">Payable Days: <span>${data.payableDays}</span></div></div>${(data.category==='Staff With OT'||data.category==='Staff With SOT')?`<div class="emp-dash-box"><h4>⏱️ Overtime</h4><div class="emp-dash-row">Extra Hours: <span>${data.extraHours} hrs</span></div><div class="emp-dash-row">Per Hour: <span>₹${data.perHour.toFixed(2)}</span></div><div class="emp-dash-row">OT Earnings: <span style="color:var(--success);">+ ₹${data.otEarnings.toFixed(2)}</span></div></div>`:''}<div class="emp-dash-box"><h4>💸 Earnings</h4><div class="emp-dash-row">Fixed Gross: <span>₹${data.actualGross.toLocaleString('en-IN')}</span></div><div class="emp-dash-row">Prorated Gross: <span>₹${data.gross.toLocaleString('en-IN')}</span></div><div class="emp-dash-row" style="font-size:12px;color:var(--text-muted);">Basic: ₹${data.basic.toLocaleString('en-IN')} | HRA: ₹${data.hra.toLocaleString('en-IN')}</div><div class="emp-dash-row" style="font-size:12px;color:var(--text-muted);">Conv: ₹${data.conv.toLocaleString('en-IN')} | Spl: ₹${data.spl.toLocaleString('en-IN')} | Med: ₹${data.med.toLocaleString('en-IN')}</div></div><div class="emp-dash-box"><h4>📉 Deductions</h4><div class="emp-dash-row" style="font-size:12px;color:var(--text-muted);">ESI: ₹${data.esi.toLocaleString('en-IN')} | PF: ₹${data.pf.toLocaleString('en-IN')} | VPF: ₹${data.vpf.toLocaleString('en-IN')} | PT: ₹${data.pt.toLocaleString('en-IN')}</div><div class="emp-dash-row" style="border-top:1px solid rgba(128,128,128,0.2);padding-top:5px;margin-top:5px;">Total Deductions: <span style="color:var(--danger);">- ₹${data.deductions.toLocaleString('en-IN')}</span></div></div><div class="emp-dash-box" style="background:rgba(16,185,129,0.1);border-color:var(--success);margin-bottom:5px;"><div class="emp-dash-row" style="margin-bottom:0;"><span style="font-size:15px;">NET PAYOUT</span><span class="emp-dash-highlight">₹${roundedNet.toLocaleString('en-IN')}</span></div></div><div class="emp-dash-words">(Rupees ${wordsNet})</div><button class="btn-main" style="background:#2563eb;" onclick="downloadPayslip()">🖨️ Download PDF Payslip</button>`;
         currentPayslipHTML=`<div style="font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif;padding:20px;color:#333;max-width:800px;margin:0 auto;background:white;"><div style="display:flex;justify-content:space-between;border-bottom:2px solid #333;padding-bottom:20px;margin-bottom:20px;align-items:center;"><div><img src="https://i.postimg.cc/C1fJDfZC/Capco-Logo.png?v=final" crossorigin="anonymous" alt="Capco Logo" style="height:55px;width:auto;margin-bottom:12px;display:block;"><div style="font-size:14px;color:#666;">Muppireddypally, Telangana</div></div><div style="text-align:right;line-height:1.6;"><strong>Payslip for ${data.month}</strong><br>Generated: ${new Date().toLocaleDateString()}</div></div><div style="font-size:22px;font-weight:bold;text-align:center;margin-bottom:30px;">SALARY SLIP</div><div style="display:flex;justify-content:space-between;gap:20px;margin-bottom:30px;"><div style="flex:1;border:1px solid #ccc;padding:15px;border-radius:8px;background:#f8fafc;line-height:1.6;"><strong>Employee:</strong> ${data.emplName}<br><strong>ID:</strong> ${data.emplId}<br><strong>Category:</strong> ${data.category}</div><div style="flex:1;border:1px solid #ccc;padding:15px;border-radius:8px;background:#f8fafc;line-height:1.6;"><strong>Total Days:</strong> ${data.monthDays}<br><strong>Payable Days:</strong> ${data.payableDays} (Present:${data.present}, Leave:${data.leaves}, Hol:${data.ph})<br><strong>Fixed Gross:</strong> ₹${data.actualGross.toLocaleString('en-IN')}</div></div><table style="width:100%;border-collapse:collapse;margin-bottom:30px;border:1px solid #cbd5e1;"><tr style="background:#f1f5f9;color:#1e293b;"><th style="border:1px solid #cbd5e1;padding:12px;text-align:left;">Earnings</th><th style="border:1px solid #cbd5e1;padding:12px;text-align:left;">₹</th><th style="border:1px solid #cbd5e1;padding:12px;text-align:left;">Deductions</th><th style="border:1px solid #cbd5e1;padding:12px;text-align:left;">₹</th></tr><tr><td style="border:1px solid #cbd5e1;padding:12px;">Basic</td><td style="border:1px solid #cbd5e1;padding:12px;">${data.basic.toLocaleString('en-IN')}</td><td style="border:1px solid #cbd5e1;padding:12px;">ESI</td><td style="border:1px solid #cbd5e1;padding:12px;">${data.esi.toLocaleString('en-IN')}</td></tr><tr><td style="border:1px solid #cbd5e1;padding:12px;">HRA</td><td style="border:1px solid #cbd5e1;padding:12px;">${data.hra.toLocaleString('en-IN')}</td><td style="border:1px solid #cbd5e1;padding:12px;">PF</td><td style="border:1px solid #cbd5e1;padding:12px;">${data.pf.toLocaleString('en-IN')}</td></tr><tr><td style="border:1px solid #cbd5e1;padding:12px;">Conveyance</td><td style="border:1px solid #cbd5e1;padding:12px;">${data.conv.toLocaleString('en-IN')}</td><td style="border:1px solid #cbd5e1;padding:12px;">VPF</td><td style="border:1px solid #cbd5e1;padding:12px;">${data.vpf.toLocaleString('en-IN')}</td></tr><tr><td style="border:1px solid #cbd5e1;padding:12px;">Special Allow.</td><td style="border:1px solid #cbd5e1;padding:12px;">${data.spl.toLocaleString('en-IN')}</td><td style="border:1px solid #cbd5e1;padding:12px;">PT</td><td style="border:1px solid #cbd5e1;padding:12px;">${data.pt.toLocaleString('en-IN')}</td></tr><tr><td style="border:1px solid #cbd5e1;padding:12px;">Medical</td><td style="border:1px solid #cbd5e1;padding:12px;">${data.med.toLocaleString('en-IN')}</td><td style="border:1px solid #cbd5e1;padding:12px;"></td><td style="border:1px solid #cbd5e1;padding:12px;"></td></tr>${data.otEarnings>0?`<tr><td style="border:1px solid #cbd5e1;padding:12px;"><strong>OT (${data.extraHours}hrs @ ₹${data.perHour.toFixed(2)}/hr)</strong></td><td style="border:1px solid #cbd5e1;padding:12px;"><strong>${data.otEarnings.toLocaleString('en-IN')}</strong></td><td style="border:1px solid #cbd5e1;padding:12px;"></td><td style="border:1px solid #cbd5e1;padding:12px;"></td></tr>`:''}<tr><th style="border:1px solid #cbd5e1;padding:12px;background:#f1f5f9;">Total Earnings</th><th style="border:1px solid #cbd5e1;padding:12px;background:#f1f5f9;">${(data.gross+data.otEarnings).toLocaleString('en-IN')}</th><th style="border:1px solid #cbd5e1;padding:12px;background:#f1f5f9;">Total Deductions</th><th style="border:1px solid #cbd5e1;padding:12px;background:#f1f5f9;">${data.deductions.toLocaleString('en-IN')}</th></tr></table><div style="font-size:22px;font-weight:bold;color:#059669;text-align:right;padding:15px;border:2px solid #059669;background:#ecfdf5;border-radius:8px;">NET PAYABLE: ₹${roundedNet.toLocaleString('en-IN')}<span style="font-size:13px;font-weight:normal;color:#475569;margin-top:6px;display:block;">(Rupees ${wordsNet})</span></div><div style="text-align:center;margin-top:48px;font-size:11px;color:#666;border-top:1px solid #eee;padding-top:18px;">Computer-generated payslip. No signature required.</div></div>`;
     }
 
@@ -1534,14 +1534,20 @@
     window.onscroll=function(){ const btn=document.getElementById("scrollToTopBtn"); btn.style.display=(document.body.scrollTop>100||document.documentElement.scrollTop>100)?"flex":"none"; };
     function scrollToTop() { window.scrollTo({top:0,behavior:'smooth'}); }
 
-    // ── ZOOM FIX USING CSS TRANSFORM ──
+    // ── ZOOM CONTROLS (Restored for Fixed Layouts) ──
     let zoomLevel = 100;
     function adjustZoom(delta) {
         zoomLevel = Math.min(130, Math.max(75, zoomLevel + delta));
-        const appContainer = document.querySelector('.app-container');
-        const loginContainer = document.getElementById('login-container');
-        if (appContainer) { appContainer.style.transform = `scale(${zoomLevel / 100})`; appContainer.style.transformOrigin = 'top center'; }
-        if (loginContainer) { loginContainer.style.transform = `scale(${zoomLevel / 100})`; loginContainer.style.transformOrigin = 'top center'; }
+        
+        // Reverting to the CSS zoom property. While technically non-standard, 
+        // it natively supports pixel-perfect scaling of position: fixed elements
+        // in Chrome, Edge, and Samsung Internet.
+        document.body.style.zoom = zoomLevel / 100;
+        
+        // Fallback for Firefox (Scales, but position:fixed anchors may drift slightly)
+        document.body.style.MozTransform = `scale(${zoomLevel / 100})`;
+        document.body.style.MozTransformOrigin = 'top left';
+
         const d = document.getElementById('zoom-display');
         if (d) d.innerText = zoomLevel + '%';
         localStorage.setItem('capco_zoom', zoomLevel);
