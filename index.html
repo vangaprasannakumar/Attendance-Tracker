@@ -1055,11 +1055,18 @@
 
     // ── KIOSK ──
     let isKioskScanning = false; let isEnrollScanning = false;
-
+    function calculateEAR(eye) {
+        const vert1 = Math.hypot(eye[1].x - eye[5].x, eye[1].y - eye[5].y);
+        const vert2 = Math.hypot(eye[2].x - eye[4].x, eye[2].y - eye[4].y);
+        const horiz = Math.hypot(eye[0].x - eye[3].x, eye[0].y - eye[3].y);
+        return (vert1 + vert2) / (2.0 * horiz);
+    }
     async function startKioskMode(action) {
         if (!modelsLoaded) { await loadAIModels(); if (!modelsLoaded) return alert("AI still loading."); }
         if (!faceMatcher) return alert("No employees enrolled yet!");
-        currentAction = action; recentlyPunched = []; consecutiveMatchId = null; consecutiveMatchCount = 0;
+        currentAction = action; recentlyPunched = []; 
+            let blinkState = 'open'; 
+            let identifiedUser = null;
         document.getElementById('kiosk-home').style.display = 'none';
         document.getElementById('kiosk-camera-view').style.display = 'block';
         document.getElementById('kiosk-action-title').innerText = `Punch ${action.toUpperCase()}`;
@@ -1086,23 +1093,55 @@
                             if (bestMatch.label !== 'unknown') {
                                 const empId = bestMatch.label;
                                 if (!recentlyPunched.includes(empId)) {
-                                    if (consecutiveMatchId === empId) { consecutiveMatchCount++; } else { consecutiveMatchId = empId; consecutiveMatchCount = 1; }
-                                    if (consecutiveMatchCount >= 2) {
-                                        consecutiveMatchId = null; consecutiveMatchCount = 0; recentlyPunched.push(empId);
+                                    
+                                    // 1. Calculate Eye Aspect Ratio
+                                    const leftEye = detection.landmarks.getLeftEye();
+                                    const rightEye = detection.landmarks.getRightEye();
+                                    const ear = (calculateEAR(leftEye) + calculateEAR(rightEye)) / 2;
+                            
+                                    // 2. State Machine: Identify -> Wait for close -> Wait for open
+                                    if (identifiedUser !== empId) {
+                                        identifiedUser = empId;
+                                        blinkState = 'open';
                                         const emp = employeeList.find(e => e.id == empId);
-                                        status.className = 'status-success'; status.innerText = `Recognized: ${emp ? emp.name : empId}! Logging...`;
-                                        const res = await callGoogleAPI({ action:'logAttendance', emplId: emp?emp.id:empId, emplName: emp?emp.name:empId, type:currentAction, remarks:'AI Camera', loggedByUser:'Kiosk', offlineTimeIso:null, selectedShift: emp?emp.shift:'REGULAR' });
-                                        if (res.status === 'success') {
-                                            showToast(res.message); playSuccessSound(emp?emp.name:empId, currentAction.toUpperCase());
-                                            status.innerText = res.message; startKioskTimer();
-                                            setTimeout(() => { status.className='status-loading'; status.innerText="Ready for next person..."; }, 3500);
-                                        } else {
-                                            status.className = 'status-error'; status.innerText = res.message;
-                                            setTimeout(() => { recentlyPunched=recentlyPunched.filter(id=>id!==empId); status.className='status-loading'; status.innerText="Ready for next person..."; }, 5000);
+                                        status.className = 'status-warning'; 
+                                        status.style.color = 'var(--warning)';
+                                        status.innerText = `Recognized ${emp ? emp.name : empId}. Please BLINK to punch...`;
+                                    } else {
+                                        if (ear < 0.25) {
+                                            blinkState = 'closed'; // Eyes closed
+                                        } else if (ear > 0.25 && blinkState === 'closed') {
+                                            // Blink completed! Lock the scanner and fire API.
+                                            isKioskScanning = false;
+                                            recentlyPunched.push(empId);
+                                            identifiedUser = null;
+                                            blinkState = 'open';
+                                            
+                                            const emp = employeeList.find(e => e.id == empId);
+                                            status.className = 'status-success'; 
+                                            status.style.color = 'var(--success)';
+                                            status.innerText = `Blink Verified! Logging...`;
+                            
+                                            callGoogleAPI({ action:'logAttendance', emplId: emp.id, emplName: emp.name, type:currentAction, remarks:'AI Camera (Liveness Verified)', loggedByUser:'Kiosk', offlineTimeIso:null, selectedShift: emp.shift })
+                                            .then(res => {
+                                                if (res.status === 'success') {
+                                                    showToast(res.message); playSuccessSound(emp.name, currentAction.toUpperCase());
+                                                    status.innerText = res.message; startKioskTimer();
+                                                    setTimeout(() => { status.className='status-loading'; status.innerText="Ready for next person..."; isKioskScanning=true; kioskScanLoop(); }, 3500);
+                                                } else {
+                                                    status.className = 'status-error'; status.innerText = res.message;
+                                                    setTimeout(() => { recentlyPunched=recentlyPunched.filter(id=>id!==empId); status.className='status-loading'; status.innerText="Ready for next person..."; isKioskScanning=true; kioskScanLoop(); }, 5000);
+                                                }
+                                            });
+                                            return; // Exit loop, it will resume from the timeout above
                                         }
-                                    } else { status.className='status-loading'; status.innerText="Confirming identity..."; }
+                                    }
                                 }
-                            } else { consecutiveMatchId=null; consecutiveMatchCount=0; status.className='status-error'; status.innerText="Face not recognized. Move closer."; }
+                            } else { 
+                                identifiedUser = null; blinkState = 'open'; 
+                                status.className='status-error'; status.innerText="Face not recognized. Move closer."; 
+                            }
+                            
                             if (isKioskScanning) kioskInterval = setTimeout(kioskScanLoop, 150);
                         } else {
                             consecutiveMatchId=null; consecutiveMatchCount=0; status.className='status-loading'; status.innerText="Looking for a face...";
