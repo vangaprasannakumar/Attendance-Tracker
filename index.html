@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Capco Master AI App</title>
+    <title>Capco HR — Master AI</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#09090b">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -163,7 +163,7 @@
 
         /* ── DROPDOWNS ── */
         .dropdown-container { position:relative; margin-bottom:18px; }
-        .dropdown-list { position:absolute; top:calc(100% + 8px); left:0; right:0; background:rgba(22,28,40,0.98); backdrop-filter:blur(14px); border:1px solid rgba(255,255,255,0.1); border-radius:14px; max-height:240px; overflow-y:auto; display:none; z-index:9999; box-shadow:0 20px 40px rgba(0,0,0,0.6); animation:fadeIn 0.15s var(--ease); }
+        .dropdown-list { position:absolute; top:calc(100% + 8px); left:0; right:0; background:rgba(22,28,40,0.98); backdrop-filter:blur(14px); border:1px solid rgba(255,255,255,0.1); border-radius:14px; max-height:min(52vh,400px); overflow-y:auto; display:none; z-index:9999; box-shadow:0 20px 40px rgba(0,0,0,0.6); animation:fadeIn 0.15s var(--ease); }
         .dropdown-item { padding:12px 16px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.04); transition:all 0.15s; font-size:13.5px; color:var(--text-main); font-weight:500; }
         .dropdown-item:hover { background:var(--accent); color:white; padding-left:22px; }
 
@@ -174,12 +174,35 @@
         .sub-tab.active { background:var(--surface-hover); color:var(--text-main); box-shadow:0 4px 12px rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); }
 
         /* ── STATS GRID ── */
-        .stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:18px; }
-        .stat-box { background:rgba(0,0,0,0.28); padding:20px 14px; border-radius:18px; text-align:center; border:1px solid rgba(255,255,255,0.06); transition:all 0.25s var(--ease); animation:statPop 0.4s var(--ease) both; }
-        .stat-box:hover { transform:translateY(-2px); background:rgba(0,0,0,0.4); }
-        .stat-box h3 { margin:0; font-size:32px; font-weight:700; color:var(--text-main); }
-        .stat-box p  { margin:7px 0 0; font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:600; letter-spacing:0.5px; }
+        .stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:20px; }
+        .stat-box { display:flex; align-items:center; gap:16px; background:rgba(0,0,0,0.28); padding:18px 20px; border-radius:18px; border:1px solid rgba(255,255,255,0.06); transition:all 0.25s var(--ease); animation:statPop 0.4s var(--ease) both; position:relative; overflow:hidden; }
+        .stat-box::after { content:''; position:absolute; top:0; right:0; width:3px; height:100%; border-radius:0 18px 18px 0; background:currentColor; opacity:0.3; }
+        .stat-box:hover { transform:translateY(-3px); background:rgba(0,0,0,0.44); box-shadow:0 8px 24px rgba(0,0,0,0.3); }
+        .stat-icon-wrap { width:48px; height:48px; border-radius:13px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+        .stat-content { flex:1; min-width:0; }
+        .stat-content h3 { margin:0; font-size:28px; font-weight:700; color:var(--text-main); line-height:1; }
+        .stat-content p { margin:5px 0 0; font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:600; letter-spacing:0.6px; }
         .stat-box:nth-child(1){animation-delay:0.00s;} .stat-box:nth-child(2){animation-delay:0.06s;} .stat-box:nth-child(3){animation-delay:0.12s;} .stat-box:nth-child(4){animation-delay:0.18s;} .stat-box:nth-child(5){animation-delay:0.24s;} .stat-box:nth-child(6){animation-delay:0.30s;}
+        /* Zoom controls */
+        .zoom-controls { display:flex; align-items:center; gap:2px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:2px; }
+        .zoom-btn { background:transparent; border:none; color:var(--text-muted); cursor:pointer; width:26px; height:26px; display:flex; align-items:center; justify-content:center; border-radius:7px; font-size:15px; font-weight:600; line-height:1; transition:all 0.15s; }
+        .zoom-btn:hover { background:rgba(255,255,255,0.12); color:var(--text-main); }
+        #zoom-display { font-size:12px; font-weight:600; color:var(--text-muted); min-width:36px; text-align:center; }
+        /* Light mode */
+        body.light-mode { --bg-dark:#f1f5f9; --surface:#ffffff; --surface-hover:#f8fafc; --border:#e2e8f0; --text-main:#0f172a; --text-muted:#64748b; }
+        body.light-mode .app-container { background:var(--bg-dark); }
+        body.light-mode #desktop-topbar { background:rgba(241,245,249,0.95); border-bottom:1px solid var(--border); }
+        body.light-mode .card { background:rgba(0,0,0,0.04); border-color:rgba(0,0,0,0.08); }
+        body.light-mode .card:hover { background:rgba(0,0,0,0.07); }
+        body.light-mode .stat-box { background:rgba(0,0,0,0.04); border-color:rgba(0,0,0,0.08); }
+        body.light-mode .stat-box:hover { background:rgba(0,0,0,0.07); }
+        body.light-mode .dropdown-list { background:rgba(255,255,255,0.98); }
+        body.light-mode .dropdown-item { color:var(--text-main); }
+        body.light-mode .modal-content { background:var(--surface); border-color:var(--border); }
+        body.light-mode select, body.light-mode input[type="text"], body.light-mode input[type="date"], body.light-mode input[type="month"], body.light-mode input[type="number"], body.light-mode input[type="time"], body.light-mode input[type="password"], body.light-mode textarea { background:rgba(0,0,0,0.05); color:var(--text-main); border-color:var(--border); }
+        body.light-mode .sub-tabs { background:rgba(0,0,0,0.06); }
+        body.light-mode .history-table td { color:var(--text-main); }
+        body.light-mode .emp-dash-box { background:rgba(0,0,0,0.04); border-color:rgba(0,0,0,0.08); }
 
         /* ── MODALS ── */
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.82); backdrop-filter:blur(10px); z-index:10000; justify-content:center; align-items:center; }
@@ -221,18 +244,18 @@
 
         /* ══ DESKTOP >= 1024px ══ */
         @media (min-width: 1024px) {
-            body { padding:0; display:block; overflow:hidden; }
+            body.is-logged-in { padding:0; display:block; overflow:hidden; }
             body.is-logged-in #desktop-sidebar { display:flex; }
-            .app-container { position:fixed; right:0; top:0; left:var(--sidebar-w); width:calc(100% - var(--sidebar-w)); max-width:none; height:100vh; border-radius:0; margin:0; display:flex; flex-direction:column; box-shadow:none; border:none; border-left:1px solid rgba(255,255,255,0.06); background:var(--bg-dark); overflow:hidden; backdrop-filter:none; animation:none; }
-            #desktop-topbar    { display:flex; }
-            #mobile-header-wrapper { display:none; }
-            #app-tabs          { display:none !important; }
-            #mobile-bottom-nav { display:none !important; }
-            #scrollToTopBtn    { bottom:24px; right:28px; }
-            .view-section { padding:28px 36px; overflow-y:auto; flex:1; padding-bottom:28px; }
-            .view-section.active { display:flex; flex-direction:column; }
+            body.is-logged-in .app-container { position:fixed; right:0; top:0; left:var(--sidebar-w); width:calc(100% - var(--sidebar-w)); max-width:none; height:100vh; border-radius:0; margin:0; display:flex; flex-direction:column; box-shadow:none; border:none; border-left:1px solid rgba(255,255,255,0.06); background:var(--bg-dark); overflow:hidden; backdrop-filter:none; animation:none; }
+            body.is-logged-in #desktop-topbar { display:flex; }
+            body.is-logged-in #mobile-header-wrapper { display:none; }
+            body.is-logged-in #app-tabs { display:none !important; }
+            body.is-logged-in #mobile-bottom-nav { display:none !important; }
+            #scrollToTopBtn { bottom:24px; right:28px; }
+            .view-section { padding:28px 36px; overflow-y:auto; flex:1; min-height:0; padding-bottom:28px; }
+            .view-section.active { display:block; overflow-y:auto; animation:fadeIn 0.2s var(--ease); }
             .stats-grid { grid-template-columns:repeat(3,1fr); }
-            .modal { left:var(--sidebar-w); width:calc(100% - var(--sidebar-w)); }
+            body.is-logged-in .modal { left:var(--sidebar-w); width:calc(100% - var(--sidebar-w)); }
             .history-table { font-size:13px; }
             .history-table th, .history-table td { padding:11px 14px; }
         }
@@ -254,12 +277,13 @@
             #app-tabs          { display:none !important; }
             #mobile-bottom-nav { display:none !important; }
             .view-section { padding:22px 24px; padding-bottom:22px; }
-            .view-section.active { display:flex; flex-direction:column; overflow-y:auto; flex:1; }
+            .view-section.active { display:block; overflow-y:auto; flex:1; min-height:0; }
             .modal { left:68px; width:calc(100% - 68px); }
             .stats-grid { grid-template-columns:repeat(3,1fr); }
         }
 
         @media (min-width: 1280px) { :root { --sidebar-w: 256px; } .view-section { padding:32px 44px; } }
+        @media (min-width: 1500px) { .view-section { padding:32px clamp(44px, calc(50% - 540px), 120px); } }
         @media (min-width: 1600px) { :root { --sidebar-w: 270px; } }
     </style>
 </head>
@@ -295,7 +319,6 @@
         <img src="https://i.postimg.cc/C1fJDfZC/Capco-Logo.png?v=final" alt="Logo">
         <div class="sidebar-logo-text">
             <h3>Capco HR</h3>
-            <span>Master AI</span>
         </div>
     </div>
 
@@ -351,6 +374,15 @@
         </div>
         <div class="topbar-right">
             <span id="topbar-clock"></span>
+            <div class="zoom-controls">
+                <button class="zoom-btn" onclick="adjustZoom(-10)" title="Zoom Out">−</button>
+                <span id="zoom-display">100%</span>
+                <button class="zoom-btn" onclick="adjustZoom(10)" title="Zoom In">+</button>
+            </div>
+            <button class="icon-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle light / dark mode" style="flex-shrink:0;">
+                <svg id="theme-icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                <svg id="theme-icon-sun"  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            </button>
             <span id="topbar-network" class="network-badge">🟢 Online</span>
             <button class="icon-btn" id="install-btn" style="display:none;color:var(--success);border-color:var(--success);" onclick="installPWA()" title="Install App">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -374,6 +406,10 @@
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     </button>
                     <button class="icon-btn" onclick="hardRefreshApp(event)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
+                    <button class="icon-btn" onclick="toggleTheme()" title="Toggle theme" id="mob-theme-btn">
+                        <svg id="mob-theme-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                        <svg id="mob-theme-sun"  width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
+                    </button>
                     <button class="icon-btn" onclick="openTutorial()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></button>
                     <button class="icon-btn logout" onclick="logout()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
                 </div>
@@ -483,12 +519,42 @@
         <div id="admin-dash-section">
             <h3 style="margin-top:0;color:var(--text-main);">Today's Overview</h3>
             <div class="stats-grid">
-                <div class="stat-box"><h3 id="dash-total">--</h3><p>Total Staff</p></div>
-                <div class="stat-box"><h3 id="dash-present" style="color:var(--success);">--</h3><p>Present</p></div>
-                <div class="stat-box" style="border-left:3px solid var(--success);"><h3 id="dash-in">--</h3><p>Currently IN</p></div>
-                <div class="stat-box" style="border-left:3px solid var(--border);"><h3 id="dash-out">--</h3><p>Punched OUT</p></div>
-                <div class="stat-box" style="border-left:3px solid var(--danger);"><h3 id="dash-leave" style="color:var(--danger);">--</h3><p>On Leave</p></div>
-                <div class="stat-box" style="border-left:3px solid var(--warning);"><h3 id="dash-late" style="color:var(--warning);">--</h3><p>Late Arrivals</p></div>
+                <div class="stat-box" style="color:#6366f1;">
+                    <div class="stat-icon-wrap" style="background:rgba(99,102,241,0.15);">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </div>
+                    <div class="stat-content"><h3 id="dash-total">--</h3><p>Total Staff</p></div>
+                </div>
+                <div class="stat-box" style="color:var(--success);">
+                    <div class="stat-icon-wrap" style="background:rgba(16,185,129,0.15);">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    </div>
+                    <div class="stat-content"><h3 id="dash-present" style="color:var(--success);">--</h3><p>Present Today</p></div>
+                </div>
+                <div class="stat-box" style="color:var(--accent);">
+                    <div class="stat-icon-wrap" style="background:rgba(59,130,246,0.15);">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </div>
+                    <div class="stat-content"><h3 id="dash-in" style="color:var(--accent);">--</h3><p>Currently IN</p></div>
+                </div>
+                <div class="stat-box" style="color:var(--text-muted);">
+                    <div class="stat-icon-wrap" style="background:rgba(100,116,139,0.15);">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    </div>
+                    <div class="stat-content"><h3 id="dash-out">--</h3><p>Punched OUT</p></div>
+                </div>
+                <div class="stat-box" style="color:var(--danger);">
+                    <div class="stat-icon-wrap" style="background:rgba(239,68,68,0.15);">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    </div>
+                    <div class="stat-content"><h3 id="dash-leave" style="color:var(--danger);">--</h3><p>On Leave</p></div>
+                </div>
+                <div class="stat-box" style="color:var(--warning);">
+                    <div class="stat-icon-wrap" style="background:rgba(245,158,11,0.15);">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    </div>
+                    <div class="stat-content"><h3 id="dash-late" style="color:var(--warning);">--</h3><p>Late Arrivals</p></div>
+                </div>
             </div>
             <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:18px;margin-top:8px;">
                 <label style="font-size:12px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:6px;display:block;">Export Monthly Data</label>
@@ -530,6 +596,12 @@
 
         <div id="admin-empl-section" style="display:none;">
             <h3 style="margin-top:0;color:var(--text-main);">Employee Master Data</h3>
+            <div class="dropdown-container" style="margin-bottom:14px;">
+                <label style="font-size:12px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;display:block;">Quick Jump to Employee</label>
+                <input type="text" id="empl-quickjump-input" class="dropdown-input" placeholder="Type name or ID to jump..." autocomplete="off" onclick="openDropdown('empl-quickjump-list')" oninput="filterDropdown('empl-quickjump-input','empl-quickjump-list','empl-quickjump-id')">
+                <input type="hidden" id="empl-quickjump-id">
+                <div id="empl-quickjump-list" class="dropdown-list"></div>
+            </div>
             <div id="enrollment-camera-view" style="display:none;margin-bottom:18px;text-align:center;">
                 <div class="video-container" id="enroll-video-container" style="display:block;">
                     <video id="enroll-video" autoplay muted playsinline></video>
@@ -549,6 +621,9 @@
 
         <div id="admin-user-section" style="display:none;">
             <h3 style="margin-top:0;color:var(--text-main);">App Users</h3>
+            <div style="background:rgba(59,130,246,0.07);border:1px solid rgba(59,130,246,0.18);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--text-muted);">
+                <strong style="color:var(--accent);">Role guide:</strong> &nbsp;Admin — full access &nbsp;|&nbsp; HR — no user management &nbsp;|&nbsp; Standby — kiosk only &nbsp;|&nbsp; Employee — own payslip &amp; history
+            </div>
             <button class="btn-main" style="margin-top:0;margin-bottom:14px;background:var(--success);box-shadow:0 4px 14px rgba(16,185,129,0.3);" onclick="openUserModal()">+ Add New User</button>
             <input type="text" id="search-admin-user" placeholder="🔍 Search users..." onkeyup="filterAdminCards('admin-users-list',this.value)">
             <div id="admin-users-list" style="margin-top:14px;"></div>
@@ -1180,12 +1255,12 @@
     }
 
     function populateDropdowns(data) {
-        const le=document.getElementById('empl-dropdown-list'), lh=document.getElementById('hist-empl-dropdown-list'), ll=document.getElementById('leave-empl-dropdown'), ld=document.getElementById('empdash-dropdown-list');
-        le.innerHTML=lh.innerHTML=ll.innerHTML=ld.innerHTML='';
+        const le=document.getElementById('empl-dropdown-list'), lh=document.getElementById('hist-empl-dropdown-list'), ll=document.getElementById('leave-empl-dropdown'), ld=document.getElementById('empdash-dropdown-list'), lqj=document.getElementById('empl-quickjump-list');
+        le.innerHTML=lh.innerHTML=ll.innerHTML=ld.innerHTML=''; if(lqj) lqj.innerHTML='';
         data.forEach(e => {
             const display=`${e.id} - ${e.name}`, safeId=safeStr(String(e.id)), safeTxt=safeStr(display);
             const mk=(a)=>`<div class="dropdown-item" data-id="${safeId}" data-text="${safeTxt}" data-action="${a}">${safeTxt}</div>`;
-            le.innerHTML+=mk('entry'); lh.innerHTML+=mk('hist'); ll.innerHTML+=mk('leave'); ld.innerHTML+=mk('empdash');
+            le.innerHTML+=mk('entry'); lh.innerHTML+=mk('hist'); ll.innerHTML+=mk('leave'); ld.innerHTML+=mk('empdash'); if(lqj) lqj.innerHTML+=mk('quickjump');
         });
     }
 
@@ -1193,6 +1268,8 @@
     document.getElementById('hist-empl-dropdown-list').addEventListener('click',e=>{ const i=e.target.closest('.dropdown-item'); if(i) chooseHist(i.dataset.id,i.dataset.text); });
     document.getElementById('leave-empl-dropdown').addEventListener('click',e=>{ const i=e.target.closest('.dropdown-item'); if(i) chooseLeave(i.dataset.id,i.dataset.text); });
     document.getElementById('empdash-dropdown-list').addEventListener('click',e=>{ const i=e.target.closest('.dropdown-item'); if(i) chooseEmpDash(i.dataset.id,i.dataset.text); });
+    const _qjEl = document.getElementById('empl-quickjump-list');
+    if (_qjEl) _qjEl.addEventListener('click',e=>{ const i=e.target.closest('.dropdown-item'); if(i){ document.getElementById('empl-quickjump-input').value=i.dataset.text; document.getElementById('empl-quickjump-id').value=i.dataset.id; _qjEl.style.display='none'; const cards=document.getElementById('admin-empl-list').getElementsByClassName('card'); for(let x=0;x<cards.length;x++){ const match=cards[x].innerText.toLowerCase().includes(i.dataset.id.toLowerCase()||i.dataset.text.toLowerCase().split(' - ')[1]||''); cards[x].style.display=match?'block':'none'; } } });
 
     function chooseEntry(id,text) {
         document.getElementById('empl-search-input').value=text; document.getElementById('empl-selected-id').value=id; document.getElementById('empl-dropdown-list').style.display='none';
@@ -1457,8 +1534,39 @@
     window.onscroll=function(){ const btn=document.getElementById("scrollToTopBtn"); btn.style.display=(document.body.scrollTop>100||document.documentElement.scrollTop>100)?"flex":"none"; };
     function scrollToTop() { window.scrollTo({top:0,behavior:'smooth'}); }
 
+    // ── ZOOM ──
+    let zoomLevel = 100;
+    function adjustZoom(delta) {
+        zoomLevel = Math.min(130, Math.max(75, zoomLevel + delta));
+        document.body.style.zoom = zoomLevel / 100;
+        const d = document.getElementById('zoom-display');
+        if (d) d.innerText = zoomLevel + '%';
+        safeSet('capco_zoom', zoomLevel);
+    }
+
+    // ── THEME ──
+    let isLightMode = false;
+    function toggleTheme() {
+        isLightMode = !isLightMode;
+        document.body.classList.toggle('light-mode', isLightMode);
+        const moon = document.getElementById('theme-icon-moon'), sun = document.getElementById('theme-icon-sun');
+        const mmoon = document.getElementById('mob-theme-moon'), msun = document.getElementById('mob-theme-sun');
+        if (moon) { moon.style.display = isLightMode ? 'none' : ''; sun.style.display = isLightMode ? '' : 'none'; }
+        if (mmoon) { mmoon.style.display = isLightMode ? 'none' : ''; msun.style.display = isLightMode ? '' : 'none'; }
+        safeSet('capco_theme', isLightMode ? 'light' : 'dark');
+    }
+
     // ── STARTUP ──
-    setInterval(updateLiveClock,1000); updateLiveClock(); startApp();
+    setInterval(updateLiveClock,1000); updateLiveClock();
+    // Restore zoom + theme before startApp
+    (function restorePrefs() {
+        const savedZoom = parseInt(safeGet('capco_zoom') || '100');
+        if (savedZoom !== 100) { zoomLevel = savedZoom; document.body.style.zoom = zoomLevel / 100; }
+        const savedTheme = safeGet('capco_theme');
+        if (savedTheme === 'light') toggleTheme();
+        const d = document.getElementById('zoom-display'); if (d) d.innerText = zoomLevel + '%';
+    })();
+    startApp();
     setTimeout(function(){ const loader=document.getElementById('loader'); if(loader){ loader.style.opacity='0'; setTimeout(()=>loader.style.display='none',600); } },1500);
 
 </script>
