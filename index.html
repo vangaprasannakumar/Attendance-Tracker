@@ -10,9 +10,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Capco HR">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">    
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
-    <style>
+
     <style>
         :root {
             --bg-dark: #09090b; --surface: #18181b; --surface-hover: #27272a; --border: #3f3f46;
@@ -25,7 +26,6 @@
         body { font-family: 'Outfit', sans-serif; color: var(--text-main); margin: 0; background: var(--bg-dark); min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 15px; overflow-x: hidden; width: 100vw; touch-action: manipulation; transition: background 0.3s var(--ease); }
         ::-webkit-scrollbar { width: 5px; height: 5px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
         
-        /* Calendar icon fix */
         ::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; opacity: 0.6; }
         body.light-mode ::-webkit-calendar-picker-indicator { filter: none; opacity: 0.6; }
 
@@ -331,7 +331,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
             <span>My Payslip</span>
         </div>
-        
+
         <div class="sidebar-section" id="snav-reports-section" style="display:none;">Reports</div>
         <div class="sidebar-item hidden-item" id="snav-reports" onclick="navTo('reports')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
@@ -483,7 +483,7 @@
         <button class="btn-main" style="margin-top:0;" onclick="generateMyPayslip()">Get Payslip</button>
         <div id="mypayslip-results" style="margin-top:22px;"></div>
     </div>
-    
+
     <div id="view-reports" class="view-section">
         <h3 style="margin-top:0;color:var(--text-main);">Master Reports</h3>
         
@@ -497,7 +497,7 @@
             </div>
         </div>
     </div>
-    
+
     <div id="view-admin" class="view-section">
         <div class="sub-tabs-container">
             <div class="sub-tabs">
@@ -589,6 +589,7 @@
 
         <div id="admin-empl-section" style="display:none;">
             <h3 style="margin-top:0;color:var(--text-main);">Employee Master Data</h3>
+            
             <div id="enrollment-camera-view" style="display:none;margin-bottom:18px;text-align:center;">
                 <div class="video-container" id="enroll-video-container" style="display:block;">
                     <video id="enroll-video" muted playsinline></video>
@@ -866,7 +867,7 @@
     }
 
     // ── NAVIGATION ──
-    const PAGE_TITLES = { entry:'Attendance Entry', history:'History', payslip:'My Payslip', admin:'Inventory', kiosk:'Kiosk' };
+    const PAGE_TITLES = { entry:'Attendance Entry', history:'History', payslip:'My Payslip', reports:'Dashboard Reports', admin:'Inventory', kiosk:'Kiosk' };
 
     function navTo(tabId, clickedEl) {
         document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
@@ -894,9 +895,11 @@
     // ── ROLE PERMISSIONS ──
     function applyRolePermissions() {
         const r = currentUser.role;
-        const sRepSection = document.getElementById('snav-reports-section');
-        const sRep        = document.getElementById('snav-reports');
-        const mRep        = document.getElementById('mnav-reports');
+
+        const sRepSection   = document.getElementById('snav-reports-section');
+        const sRep          = document.getElementById('snav-reports');
+        const mRep          = document.getElementById('mnav-reports');
+        
         const sAdminSection = document.getElementById('snav-admin-section');
         const sAdmin        = document.getElementById('snav-admin');
         const sPayslip      = document.getElementById('snav-payslip');
@@ -919,6 +922,9 @@
             if (sAdmin)   sAdmin.classList.add('hidden-item');
             if (sPayslip) sPayslip.classList.add('hidden-item');
             if (sAdminSection) sAdminSection.style.display = 'none';
+            if (sRep) sRep.classList.add('hidden-item');
+            if (mRep) mRep.classList.add('hidden-mob');
+            if (sRepSection) sRepSection.style.display = 'none';
         } else if (r === 'Employee') {
             document.getElementById('hist-empl-search-container').style.display = 'none';
             if (sEntry)   sEntry.classList.add('hidden-item');
@@ -928,6 +934,9 @@
             if (sAdminSection) sAdminSection.style.display = 'none';
             if (sPayslip) sPayslip.classList.remove('hidden-item');
             if (mPayslip) mPayslip.classList.remove('hidden-mob');
+            if (sRep) sRep.classList.add('hidden-item');
+            if (mRep) mRep.classList.add('hidden-mob');
+            if (sRepSection) sRepSection.style.display = 'none';
             navTo('payslip');
         } else {
             document.getElementById('hist-empl-search-container').style.display = 'block';
@@ -936,19 +945,19 @@
             if (sPayslip) sPayslip.classList.add('hidden-item');
             if (mPayslip) mPayslip.classList.add('hidden-mob');
             if (r === 'Admin' || r === 'HR') {
-                if (sRep) sRep.classList.remove('hidden-item');
-                if (mRep) mRep.classList.remove('hidden-mob');
-                if (sRepSection) sRepSection.style.display = 'block';
                 if (sAdmin)   sAdmin.classList.remove('hidden-item');
                 if (mAdmin)   mAdmin.classList.remove('hidden-mob');
                 if (sAdminSection) sAdminSection.style.display = 'block';
+                if (sRep) sRep.classList.remove('hidden-item');
+                if (mRep) mRep.classList.remove('hidden-mob');
+                if (sRepSection) sRepSection.style.display = 'block';
             } else {
-                if (sRep) sRep.classList.add('hidden-item');
-                if (mRep) mRep.classList.add('hidden-mob');
-                if (sRepSection) sRepSection.style.display = 'none';
                 if (sAdmin)   sAdmin.classList.add('hidden-item');
                 if (mAdmin)   mAdmin.classList.add('hidden-mob');
                 if (sAdminSection) sAdminSection.style.display = 'none';
+                if (sRep) sRep.classList.add('hidden-item');
+                if (mRep) mRep.classList.add('hidden-mob');
+                if (sRepSection) sRepSection.style.display = 'none';
             }
             navTo('entry');
         }
@@ -1088,20 +1097,24 @@
         }
     }
 
-    // ── KIOSK ──
+    // ── KIOSK WITH LIVENESS DETECTION ──
     let isKioskScanning = false; let isEnrollScanning = false;
+    let blinkState = 'open'; let identifiedUser = null; 
+
     function calculateEAR(eye) {
         const vert1 = Math.hypot(eye[1].x - eye[5].x, eye[1].y - eye[5].y);
         const vert2 = Math.hypot(eye[2].x - eye[4].x, eye[2].y - eye[4].y);
         const horiz = Math.hypot(eye[0].x - eye[3].x, eye[0].y - eye[3].y);
         return (vert1 + vert2) / (2.0 * horiz);
     }
+
     async function startKioskMode(action) {
         if (!modelsLoaded) { await loadAIModels(); if (!modelsLoaded) return alert("AI still loading."); }
         if (!faceMatcher) return alert("No employees enrolled yet!");
+        
         currentAction = action; recentlyPunched = []; 
-            let blinkState = 'open'; 
-            let identifiedUser = null;
+        blinkState = 'open'; identifiedUser = null; 
+        
         document.getElementById('kiosk-home').style.display = 'none';
         document.getElementById('kiosk-camera-view').style.display = 'block';
         document.getElementById('kiosk-action-title').innerText = `Punch ${action.toUpperCase()}`;
@@ -1109,6 +1122,7 @@
         const status = document.getElementById('ai-status');
         document.getElementById('video-container').style.display = 'block';
         status.style.display = 'block'; status.className = 'status-loading'; status.innerText = "Starting Camera...";
+        
         try {
             video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode:'user', width:{ideal:640}, height:{ideal:480} } });
             
@@ -1129,12 +1143,12 @@
                                 const empId = bestMatch.label;
                                 if (!recentlyPunched.includes(empId)) {
                                     
-                                    // 1. Calculate Eye Aspect Ratio
+                                    // Calculate Eye Aspect Ratio
                                     const leftEye = detection.landmarks.getLeftEye();
                                     const rightEye = detection.landmarks.getRightEye();
                                     const ear = (calculateEAR(leftEye) + calculateEAR(rightEye)) / 2;
-                            
-                                    // 2. State Machine: Identify -> Wait for close -> Wait for open
+
+                                    // Liveness state machine
                                     if (identifiedUser !== empId) {
                                         identifiedUser = empId;
                                         blinkState = 'open';
@@ -1156,7 +1170,7 @@
                                             status.className = 'status-success'; 
                                             status.style.color = 'var(--success)';
                                             status.innerText = `Blink Verified! Logging...`;
-                            
+
                                             callGoogleAPI({ action:'logAttendance', emplId: emp.id, emplName: emp.name, type:currentAction, remarks:'AI Camera (Liveness Verified)', loggedByUser:'Kiosk', offlineTimeIso:null, selectedShift: emp.shift })
                                             .then(res => {
                                                 if (res.status === 'success') {
@@ -1168,7 +1182,7 @@
                                                     setTimeout(() => { recentlyPunched=recentlyPunched.filter(id=>id!==empId); status.className='status-loading'; status.innerText="Ready for next person..."; isKioskScanning=true; kioskScanLoop(); }, 5000);
                                                 }
                                             });
-                                            return; // Exit loop, it will resume from the timeout above
+                                            return; 
                                         }
                                     }
                                 }
@@ -1176,10 +1190,10 @@
                                 identifiedUser = null; blinkState = 'open'; 
                                 status.className='status-error'; status.innerText="Face not recognized. Move closer."; 
                             }
-                            
                             if (isKioskScanning) kioskInterval = setTimeout(kioskScanLoop, 150);
                         } else {
-                            consecutiveMatchId=null; consecutiveMatchCount=0; status.className='status-loading'; status.innerText="Looking for a face...";
+                            identifiedUser = null; blinkState = 'open'; 
+                            status.className='status-loading'; status.innerText="Looking for a face...";
                             if (isKioskScanning) kioskInterval = setTimeout(kioskScanLoop, 600);
                         }
                     } catch(err) { if (isKioskScanning) kioskInterval = setTimeout(kioskScanLoop, 600); }
@@ -1192,7 +1206,7 @@
     let timeLeft = 120;
     function startKioskTimer() { clearInterval(kioskTimer); timeLeft=120; kioskTimer=setInterval(()=>{ timeLeft--; if(timeLeft<=0) stopKioskMode(); },1000); }
     function stopKioskMode() {
-        isKioskScanning=false; consecutiveMatchId=null; consecutiveMatchCount=0;
+        isKioskScanning=false; identifiedUser=null; blinkState='open';
         clearTimeout(kioskInterval); clearInterval(kioskTimer);
         const video = document.getElementById('kiosk-video');
         if (video.srcObject) video.srcObject.getTracks().forEach(t=>t.stop());
@@ -1440,17 +1454,10 @@
     function downloadPayslip() {
         if (!currentPayslipHTML) return;
         showToast("Opening print dialog...");
-        document.getElementById('print-section').innerHTML = currentPayslipHTML;
-        
-        // Temporarily change the page title to set the PDF file name
+        document.getElementById('print-section').innerHTML=currentPayslipHTML;
         const originalTitle = document.title;
-        document.title = currentPayslipTitle; 
-        
-        setTimeout(() => { 
-            window.print(); 
-            // Restore the original app title after the print dialog opens
-            document.title = originalTitle; 
-        }, 500);
+        document.title = currentPayslipTitle;
+        setTimeout(() => { window.print(); document.title = originalTitle; }, 500);
     }
 
     // ── HISTORY ──
@@ -1582,6 +1589,7 @@
             else if (subId==='sub-btn-empl')    { title="👥 Employees"; html='<ul><li>Add/edit employees and salary. Click Enroll Face to register AI recognition.</li></ul>'; }
             else if (subId==='sub-btn-user')    { title="🔐 App Users"; html='<ul><li>Create logins. Select role from the dropdown — Admin, HR, Standby, or Employee.</li></ul>'; }
         } else if (activeMainTab==='view-payslip') { title="📄 My Payslip"; html='<ul><li>Select a month and tap Get Payslip for your full salary breakdown. Use the blue button to download as PDF.</li></ul>'; }
+        else if (activeMainTab==='view-reports') { title="📊 Dashboard Reports"; html='<ul><li>Select a month to download a complete Excel Matrix of all staff attendance and leave balances.</li></ul>'; }
         document.getElementById('tutorial-title').innerText=title; document.getElementById('tutorial-body').innerHTML=html; document.getElementById('tutorial-modal').style.display='flex';
     }
 
@@ -1591,7 +1599,7 @@
     window.onscroll=function(){ const btn=document.getElementById("scrollToTopBtn"); btn.style.display=(document.body.scrollTop>100||document.documentElement.scrollTop>100)?"flex":"none"; };
     function scrollToTop() { window.scrollTo({top:0,behavior:'smooth'}); }
 
-    // ── SAFE CSV DOWNLOAD USING BLOB ──
+    // ── EXPORT CSV ──
     async function downloadCSV() {
         const m = document.getElementById('export-month').value;
         if (!m) return alert("Select month.");
@@ -1605,7 +1613,7 @@
         document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(link.href);
     }
 
-    // ── DASHBOARD REPORT EXPORT (TRUE .XLSX) ──
+    // ── EXPORT EXCEL MATRIX ──
     async function downloadDashboardReport() {
         const m = document.getElementById('report-dash-month').value;
         if (!m) return alert("Please select a month.");
@@ -1619,29 +1627,25 @@
         const monthName = new Date(year, parseInt(monthNum)-1, 1).toLocaleString('default', { month: 'long' });
         const fileName = `${monthName} ${year} - Monthly Dashboard.xlsx`;
 
-        // 1. Initialize Excel Workbook
         const workbook = new ExcelJS.Workbook();
         const sheet = workbook.addWorksheet('Dashboard');
 
-        // 2. Add Data
         sheet.addRow(res.header1);
         sheet.addRow(res.header2);
         res.rows.forEach(r => sheet.addRow(r));
 
-        // 3. Apply Professional Styling
-        sheet.views = [{ state: 'frozen', xSplit: 2, ySplit: 2 }]; // Freeze Top Headers & Left Names
+        sheet.views = [{ state: 'frozen', xSplit: 2, ySplit: 2 }];
 
         const headerStyle = {
-            font: { bold: true, color: { argb: 'FFFFFFFF' } }, // White text
-            fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3B82F6' } }, // Capco Blue
+            font: { bold: true, color: { argb: 'FFFFFFFF' } },
+            fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3B82F6' } },
             alignment: { horizontal: 'center', vertical: 'middle' },
             border: { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} }
         };
 
         sheet.getRow(1).eachCell(c => { c.style = headerStyle; });
         sheet.getRow(2).eachCell(c => { c.style = headerStyle; });
-        sheet.mergeCells('A1:A2'); // Merge S.NO
-        sheet.mergeCells('B1:B2'); // Merge EMP NAME
+        sheet.mergeCells('A1:A2'); sheet.mergeCells('B1:B2');
 
         for (let rowIdx = 3; rowIdx <= sheet.rowCount; rowIdx++) {
             const row = sheet.getRow(rowIdx);
@@ -1650,30 +1654,26 @@
                 cell.alignment = { horizontal: 'center', vertical: 'middle' };
                 if (colIdx === 2) cell.alignment.horizontal = 'left'; 
 
-                // Highlight Sundays & Holidays in Yellow
                 const h2Val = res.header2[colIdx - 1];
                 if (h2Val === 'SUN' || res.header1[colIdx - 1] === '') {
                     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF08A' } };
                 }
 
-                // Dynamic Text Colors
-                if (cell.value === 'X') cell.font = { color: { argb: 'FF10B981' }, bold: true }; // Green
-                if (cell.value === 'A') cell.font = { color: { argb: 'FFEF4444' }, bold: true }; // Red
-                if (cell.value === 'EL') cell.font = { color: { argb: 'FFF59E0B' }, bold: true }; // Orange
+                if (cell.value === 'X') cell.font = { color: { argb: 'FF10B981' }, bold: true };
+                if (cell.value === 'A') cell.font = { color: { argb: 'FFEF4444' }, bold: true };
+                if (cell.value === 'EL') cell.font = { color: { argb: 'FFF59E0B' }, bold: true };
             });
         }
 
-        // 4. Adjust Column Widths
         sheet.getColumn(1).width = 6;
         sheet.getColumn(2).width = 25;
         for (let i = 3; i <= sheet.columnCount; i++) sheet.getColumn(i).width = 5;
         
         const len = res.header1.length;
-        sheet.getColumn(len - 2).width = 8; // TPD
-        sheet.getColumn(len - 1).width = 8; // PST EL
-        sheet.getColumn(len).width = 10;    // AVAIL EL
+        sheet.getColumn(len - 2).width = 8; 
+        sheet.getColumn(len - 1).width = 8; 
+        sheet.getColumn(len).width = 10;    
 
-        // 5. Download the file
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         const link = document.createElement('a'); 
