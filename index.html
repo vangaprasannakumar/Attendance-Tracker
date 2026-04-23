@@ -329,6 +329,12 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
             <span>My Payslip</span>
         </div>
+        
+        <div class="sidebar-section" id="snav-reports-section" style="display:none;">Reports</div>
+        <div class="sidebar-item hidden-item" id="snav-reports" onclick="navTo('reports')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            <span>Dashboard Reports</span>
+        </div>
 
         <div class="sidebar-section" id="snav-admin-section" style="display:none;">Admin</div>
         <div class="sidebar-item hidden-item" id="snav-admin" onclick="navTo('admin')">
@@ -475,7 +481,21 @@
         <button class="btn-main" style="margin-top:0;" onclick="generateMyPayslip()">Get Payslip</button>
         <div id="mypayslip-results" style="margin-top:22px;"></div>
     </div>
-
+    
+    <div id="view-reports" class="view-section">
+        <h3 style="margin-top:0;color:var(--text-main);">Master Reports</h3>
+        
+        <div class="card" style="margin-top:20px;">
+            <h4 style="color:var(--accent);">Monthly Dashboard Report</h4>
+            <p>Generates a dynamic attendance matrix with automatic Holiday/Sunday calculations and Live Leave Balances.</p>
+            <label style="font-size:12px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;margin-top:14px;display:block;">Select Month</label>
+            <div style="display:flex;gap:10px;">
+                <input type="month" id="report-dash-month" style="margin-bottom:0;">
+                <button class="btn-main" style="margin-top:0;" onclick="downloadDashboardReport()">Download Excel</button>
+            </div>
+        </div>
+    </div>
+    
     <div id="view-admin" class="view-section">
         <div class="sub-tabs-container">
             <div class="sub-tabs">
@@ -607,6 +627,10 @@
     <div class="mob-nav-item hidden-mob" id="mnav-payslip" onclick="navTo('payslip')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         <span>Payslip</span>
+    </div>
+    <div class="mob-nav-item hidden-mob" id="mnav-reports" onclick="navTo('reports')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span>Reports</span>
     </div>
     <div class="mob-nav-item hidden-mob" id="mnav-admin" onclick="navTo('admin')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
@@ -868,7 +892,9 @@
     // ── ROLE PERMISSIONS ──
     function applyRolePermissions() {
         const r = currentUser.role;
-
+        const sRepSection = document.getElementById('snav-reports-section');
+        const sRep        = document.getElementById('snav-reports');
+        const mRep        = document.getElementById('mnav-reports');
         const sAdminSection = document.getElementById('snav-admin-section');
         const sAdmin        = document.getElementById('snav-admin');
         const sPayslip      = document.getElementById('snav-payslip');
@@ -908,10 +934,16 @@
             if (sPayslip) sPayslip.classList.add('hidden-item');
             if (mPayslip) mPayslip.classList.add('hidden-mob');
             if (r === 'Admin' || r === 'HR') {
+                if (sRep) sRep.classList.remove('hidden-item');
+                if (mRep) mRep.classList.remove('hidden-mob');
+                if (sRepSection) sRepSection.style.display = 'block';
                 if (sAdmin)   sAdmin.classList.remove('hidden-item');
                 if (mAdmin)   mAdmin.classList.remove('hidden-mob');
                 if (sAdminSection) sAdminSection.style.display = 'block';
             } else {
+                if (sRep) sRep.classList.add('hidden-item');
+                if (mRep) mRep.classList.add('hidden-mob');
+                if (sRepSection) sRepSection.style.display = 'none';
                 if (sAdmin)   sAdmin.classList.add('hidden-item');
                 if (mAdmin)   mAdmin.classList.add('hidden-mob');
                 if (sAdminSection) sAdminSection.style.display = 'none';
@@ -1569,6 +1601,34 @@
         const link = document.createElement('a'); 
         link.href = URL.createObjectURL(blob); link.download = `Capco_Attendance_${m}.csv`; 
         document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(link.href);
+    }
+
+    // ── DASHBOARD REPORT EXPORT ──
+    async function downloadDashboardReport() {
+        const m = document.getElementById('report-dash-month').value;
+        if (!m) return alert("Please select a month.");
+        
+        showToast("Generating Matrix...", "warn");
+        const res = await callGoogleAPI({ action: 'exportMonthlyDashboard', month: m });
+        
+        if (!res || typeof res !== 'string') return showToast('Report generation failed', 'error');
+        
+        // Dynamically format name: "March 2026 - Monthly Dashboard Report"
+        const [year, monthNum] = m.split('-');
+        const monthName = new Date(year, parseInt(monthNum)-1, 1).toLocaleString('default', { month: 'long' });
+        const fileName = `${monthName} ${year} - Monthly Dashboard Report.csv`;
+
+        const byteCharacters = atob(res);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
+        const blob = new Blob([new Uint8Array(byteNumbers)], { type: 'text/csv;charset=utf-8;' });
+        
+        const link = document.createElement('a'); 
+        link.href = URL.createObjectURL(blob); 
+        link.download = fileName; 
+        document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(link.href);
+        
+        showToast("Report Downloaded Successfully");
     }
 
     // ── THEME ──
