@@ -84,8 +84,10 @@
         .sidebar-user { display:flex; align-items:center; gap:10px; padding:10px 8px; border-radius:10px; margin-bottom:6px; }
         .sidebar-avatar { width:34px; height:34px; border-radius:9px; background:rgba(59,130,246,0.18); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:var(--accent); flex-shrink:0; }
         .sidebar-user-info .s-name { font-size:12.5px; font-weight:600; color:var(--text-main); max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        
         .sidebar-logout { display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:10px; color:#f87171; cursor:pointer; font-size:13px; font-weight:500; transition:background 0.2s; }
         .sidebar-logout:hover { background:rgba(239,68,68,0.1); }
+        .sidebar-logout svg { width:18px; height:18px; flex-shrink:0; }
 
         /* ── DESKTOP TOP BAR & MOBILE HEADER ── */
         #desktop-topbar { display:none; height:var(--topbar-h); padding:0 28px; align-items:center; justify-content:space-between; background:rgba(13,13,19,0.9); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:100; flex-shrink:0; }
@@ -402,7 +404,7 @@
         <div id="kiosk-camera-view" style="display:none;">
             <h3 style="text-align:center;margin-top:0;font-size:20px;" id="kiosk-action-title">Scanning Face...</h3>
             <div class="video-container" id="video-container">
-                <video id="kiosk-video" muted playsinline></video>
+                <video id="kiosk-video" autoplay muted playsinline></video>
             </div>
             <div id="timer-display">120</div>
             <div id="ai-status" class="status-loading">Looking for a face...</div>
@@ -587,7 +589,7 @@
             
             <div id="enrollment-camera-view" style="display:none;margin-bottom:18px;text-align:center;">
                 <div class="video-container" id="enroll-video-container" style="display:block;">
-                    <video id="enroll-video" muted playsinline></video>
+                    <video id="enroll-video" autoplay muted playsinline></video>
                 </div>
                 <div id="enroll-status" class="status-loading" style="display:block;margin-top:12px;">Position face in camera...</div>
                 <button class="btn-main" style="background:var(--danger);margin-top:10px;" onclick="stopEnrollment()">Cancel Enrollment</button>
@@ -843,7 +845,7 @@
             setTimeout(() => {
                 isToastShowing = false;
                 processToastQueue();
-            }, 400); // Wait for transition to finish
+            }, 400); 
         }, 3000);
     }
 
@@ -1004,7 +1006,6 @@
         if (savedStr) {
             try {
                 const parsed = JSON.parse(savedStr);
-                // Validate Token Expiration (5.5 hours)
                 if (parsed.expires && Date.now() > parsed.expires) {
                     localStorage.removeItem('capco_attendance_user');
                     showToast('Session expired. Please log in again.', 'error');
@@ -1029,7 +1030,7 @@
         const res = await callGoogleAPI({ action: 'login', username: u, password: p });
         btn.disabled = false; btn.innerText = 'Login';
         if (res.status === 'success') {
-            const expires = Date.now() + (5.5 * 60 * 60 * 1000); // Expiration offset
+            const expires = Date.now() + (5.5 * 60 * 60 * 1000); 
             localStorage.setItem('capco_attendance_user', JSON.stringify({ username: res.username, role: res.role, token: res.token || '', expires: expires }));
             startApp();
         } else { msg.innerText = res.message; }
@@ -1067,7 +1068,6 @@
                 updateNetworkBadges(true);
                 if (currentUser.role === 'Standby' || currentUser.role === 'Admin' || currentUser.role === 'HR') loadAIModels();
                 
-                // Check manifest shortcut action
                 const params = new URLSearchParams(window.location.search);
                 const action = params.get('action');
                 if ((action === 'in' || action === 'out') && currentUser.role !== 'Employee') {
@@ -1162,7 +1162,10 @@
         status.style.display = 'block'; status.className = 'status-loading'; status.innerText = "Starting Camera...";
         
         try {
-            video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode:'user', width:{ideal:640}, height:{ideal:480} } });
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error("Camera not supported or HTTPS missing.");
+            const streamPromise = navigator.mediaDevices.getUserMedia({ video: { facingMode:'user' } });
+            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Camera initialization timeout. Check permissions.")), 8000));
+            video.srcObject = await Promise.race([streamPromise, timeoutPromise]);
             
             video.play().catch(e => {
                 status.className = 'status-error'; 
@@ -1181,12 +1184,10 @@
                                 const empId = bestMatch.label;
                                 if (!recentlyPunched.includes(empId)) {
                                     
-                                    // Calculate Eye Aspect Ratio
                                     const leftEye = detection.landmarks.getLeftEye();
                                     const rightEye = detection.landmarks.getRightEye();
                                     const ear = (calculateEAR(leftEye) + calculateEAR(rightEye)) / 2;
 
-                                    // Liveness state machine
                                     if (identifiedUser !== empId) {
                                         identifiedUser = empId;
                                         blinkState = 'open';
@@ -1196,9 +1197,8 @@
                                         status.innerText = `Recognized ${emp ? emp.name : empId}. Please BLINK to punch...`;
                                     } else {
                                         if (ear < 0.25) {
-                                            blinkState = 'closed'; // Eyes closed
+                                            blinkState = 'closed'; 
                                         } else if (ear > 0.25 && blinkState === 'closed') {
-                                            // Blink completed! Lock the scanner and fire API.
                                             isKioskScanning = false;
                                             recentlyPunched.push(empId);
                                             identifiedUser = null;
@@ -1253,6 +1253,7 @@
             if(timeLeft<=0) stopKioskMode(); 
         },1000); 
     }
+    
     function stopKioskMode() {
         isKioskScanning = false; 
         identifiedUser = null; 
@@ -1291,7 +1292,11 @@
         status.className='status-loading'; status.innerText="Starting Camera...";
         const TARGET_SAMPLES = 5; let collectedDescriptors = [];
         try {
-            video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode:'user', width:{ideal:640}, height:{ideal:480} } });
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error("Camera not supported or HTTPS missing.");
+            const streamPromise = navigator.mediaDevices.getUserMedia({ video: { facingMode:'user' } });
+            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Camera initialization timeout. Check permissions.")), 8000));
+            video.srcObject = await Promise.race([streamPromise, timeoutPromise]);
+            
             status.innerText = `Look directly at the camera. Capturing 0/${TARGET_SAMPLES}...`;
             
             video.play().catch(e => {
@@ -1301,11 +1306,13 @@
 
             video.onplay = async () => {
                 isEnrollScanning = true;
+                let noFaceFrames = 0;
                 async function enrollScanLoop() {
                     if (!isEnrollScanning) return;
                     try {
                         const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize:160, scoreThreshold:0.5 })).withFaceLandmarks().withFaceDescriptor();
                         if (detection) {
+                            noFaceFrames = 0;
                             collectedDescriptors.push(Array.from(detection.descriptor));
                             status.innerText = `Capturing ${collectedDescriptors.length}/${TARGET_SAMPLES}...`;
                             if (collectedDescriptors.length >= TARGET_SAMPLES) {
@@ -1319,6 +1326,9 @@
                                 } else { status.className='status-error'; status.innerText="Save Failed: "+res.message; collectedDescriptors=[]; isEnrollScanning=true; }
                                 return;
                             }
+                        } else {
+                            noFaceFrames++;
+                            if (noFaceFrames > 8) status.innerText = "No face detected. Move to better lighting.";
                         }
                     } catch(err) {}
                     if (isEnrollScanning) setTimeout(enrollScanLoop,300);
