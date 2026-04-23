@@ -1523,6 +1523,7 @@
         document.getElementById('admin-users-list').innerHTML=html;
     }
 
+    
     function openUserModal(idx) {
         document.getElementById('user-modal-error').innerText='';
         if (idx!==undefined&&adminUsersCache[idx]) { const u=adminUsersCache[idx]; document.getElementById('user-row').value=u.rowIndex; document.getElementById('user-name').value=u.username; document.getElementById('user-role').value=u.role; document.getElementById('user-email').value=u.email; document.getElementById('user-pass').value=''; document.getElementById('user-pass').placeholder='Leave blank to keep current password'; document.getElementById('btn-del-user').style.display='block'; }
