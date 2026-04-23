@@ -10,7 +10,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Capco HR">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <style>
     <style>
         :root {
             --bg-dark: #09090b; --surface: #18181b; --surface-hover: #27272a; --border: #3f3f46;
@@ -1603,32 +1605,83 @@
         document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(link.href);
     }
 
-    // ── DASHBOARD REPORT EXPORT ──
+    // ── DASHBOARD REPORT EXPORT (TRUE .XLSX) ──
     async function downloadDashboardReport() {
         const m = document.getElementById('report-dash-month').value;
         if (!m) return alert("Please select a month.");
         
-        showToast("Generating Matrix...", "warn");
+        showToast("Generating Excel Matrix...", "warn");
         const res = await callGoogleAPI({ action: 'exportMonthlyDashboard', month: m });
         
-        if (!res || typeof res !== 'string') return showToast('Report generation failed', 'error');
+        if (res.status === 'error') return showToast(res.message, 'error');
         
-        // Dynamically format name: "March 2026 - Monthly Dashboard Report"
         const [year, monthNum] = m.split('-');
         const monthName = new Date(year, parseInt(monthNum)-1, 1).toLocaleString('default', { month: 'long' });
-        const fileName = `${monthName} ${year} - Monthly Dashboard Report.csv`;
+        const fileName = `${monthName} ${year} - Monthly Dashboard.xlsx`;
 
-        const byteCharacters = atob(res);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
-        const blob = new Blob([new Uint8Array(byteNumbers)], { type: 'text/csv;charset=utf-8;' });
+        // 1. Initialize Excel Workbook
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('Dashboard');
+
+        // 2. Add Data
+        sheet.addRow(res.header1);
+        sheet.addRow(res.header2);
+        res.rows.forEach(r => sheet.addRow(r));
+
+        // 3. Apply Professional Styling
+        sheet.views = [{ state: 'frozen', xSplit: 2, ySplit: 2 }]; // Freeze Top Headers & Left Names
+
+        const headerStyle = {
+            font: { bold: true, color: { argb: 'FFFFFFFF' } }, // White text
+            fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3B82F6' } }, // Capco Blue
+            alignment: { horizontal: 'center', vertical: 'middle' },
+            border: { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} }
+        };
+
+        sheet.getRow(1).eachCell(c => { c.style = headerStyle; });
+        sheet.getRow(2).eachCell(c => { c.style = headerStyle; });
+        sheet.mergeCells('A1:A2'); // Merge S.NO
+        sheet.mergeCells('B1:B2'); // Merge EMP NAME
+
+        for (let rowIdx = 3; rowIdx <= sheet.rowCount; rowIdx++) {
+            const row = sheet.getRow(rowIdx);
+            row.eachCell((cell, colIdx) => {
+                cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                if (colIdx === 2) cell.alignment.horizontal = 'left'; 
+
+                // Highlight Sundays & Holidays in Yellow
+                const h2Val = res.header2[colIdx - 1];
+                if (h2Val === 'SUN' || res.header1[colIdx - 1] === '') {
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF08A' } };
+                }
+
+                // Dynamic Text Colors
+                if (cell.value === 'X') cell.font = { color: { argb: 'FF10B981' }, bold: true }; // Green
+                if (cell.value === 'A') cell.font = { color: { argb: 'FFEF4444' }, bold: true }; // Red
+                if (cell.value === 'EL') cell.font = { color: { argb: 'FFF59E0B' }, bold: true }; // Orange
+            });
+        }
+
+        // 4. Adjust Column Widths
+        sheet.getColumn(1).width = 6;
+        sheet.getColumn(2).width = 25;
+        for (let i = 3; i <= sheet.columnCount; i++) sheet.getColumn(i).width = 5;
         
+        const len = res.header1.length;
+        sheet.getColumn(len - 2).width = 8; // TPD
+        sheet.getColumn(len - 1).width = 8; // PST EL
+        sheet.getColumn(len).width = 10;    // AVAIL EL
+
+        // 5. Download the file
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         const link = document.createElement('a'); 
         link.href = URL.createObjectURL(blob); 
         link.download = fileName; 
-        document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(link.href);
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
         
-        showToast("Report Downloaded Successfully");
+        showToast("Excel Downloaded Successfully");
     }
 
     // ── THEME ──
