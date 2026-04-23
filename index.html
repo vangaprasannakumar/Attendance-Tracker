@@ -154,6 +154,7 @@
         .status-loading { background:rgba(245,158,11,0.15); color:var(--warning); border:1px solid rgba(245,158,11,0.3); }
         .status-success { background:rgba(16,185,129,0.15);  color:var(--success); border:1px solid rgba(16,185,129,0.3); }
         .status-error   { background:rgba(239,68,68,0.15);   color:var(--danger);  border:1px solid rgba(239,68,68,0.3);  }
+        .status-warning { background:rgba(245,158,11,0.15); color:var(--warning); border:1px solid rgba(245,158,11,0.3); }
         #timer-display  { display:none; }
 
         /* ── CARDS ── */
@@ -742,12 +743,11 @@
     // MUST match your Google Apps Script Web App URL
     const GOOGLE_API_URL = "https://script.google.com/macros/s/AKfycbzsV8eP3nMkVUva7WwHkDKi820Mv0BEm0kTxxM__EamMerhKdhxQJKtVRA0mSI0_EjK/exec";
 
-    let currentUser = { username: '', role: '', token: '' };
+    let currentUser = { username: '', role: '', token: '', timestamp: null };
     let employeeList = []; let shiftsData = []; let historyData = []; let adminUsersCache = [];
     let modelsLoaded = false; let faceMatcher = null; let kioskInterval = null; let kioskTimer = null;
     let currentAction = 'in'; let recentlyPunched = []; let currentPayslipHTML = ""; let currentPayslipTitle = "";
     let activeEnrollId = null; let myEmplId = null;
-    let consecutiveMatchId = null; let consecutiveMatchCount = 0;
 
     let deferredPrompt;
     if ('serviceWorker' in navigator) { 
@@ -755,7 +755,7 @@
         navigator.serviceWorker.addEventListener('message', event => {
             if (event.data && event.data.type === 'SYNC_COMPLETE') {
                 showToast(`✅ Offline punches synced successfully!`);
-                refreshEmployeeList();
+                refreshAppData(false);
             }
         });
     }
@@ -968,10 +968,23 @@
         const savedStr = localStorage.getItem('capco_attendance_user');
         if (savedStr) {
             try {
-                currentUser = JSON.parse(savedStr);
+                const parsed = JSON.parse(savedStr);
+                // BUG FIX: Token expiration check (6 hours = 21600000 ms)
+                if (parsed.timestamp && (Date.now() - parsed.timestamp > 21600000)) {
+                    showToast('Session expired. Please log in again.', 'error');
+                    localStorage.removeItem('capco_attendance_user');
+                    return;
+                }
+                currentUser = parsed;
                 document.body.classList.add('is-logged-in'); 
                 applyRolePermissions();
-                fetchDataAndInitializeAI();
+                refreshAppData(true);
+                
+                const params = new URLSearchParams(window.location.search);
+                const action = params.get('action');
+                if ((action === 'in' || action === 'out') && currentUser.role !== 'Employee') {
+                    setTimeout(() => startKioskMode(action), 1000); 
+                }
             } catch(e) { localStorage.removeItem('capco_attendance_user'); }
         }
     }
@@ -987,14 +1000,20 @@
         const res = await callGoogleAPI({ action: 'login', username: u, password: p });
         btn.disabled = false; btn.innerText = 'Login';
         if (res.status === 'success') {
-            localStorage.setItem('capco_attendance_user', JSON.stringify({ username: res.username, role: res.role, token: res.token || '' }));
+            // BUG FIX: Store timestamp for expiration check
+            localStorage.setItem('capco_attendance_user', JSON.stringify({ 
+                username: res.username, 
+                role: res.role, 
+                token: res.token || '',
+                timestamp: Date.now()
+            }));
             startApp();
         } else { msg.innerText = res.message; }
     }
 
     function logout() {
         localStorage.removeItem('capco_attendance_user');
-        currentUser = { username: '', role: '', token: '' };
+        currentUser = { username: '', role: '', token: '', timestamp: null };
         document.getElementById('login-user').value = '';
         document.getElementById('login-pass').value = '';
         document.body.classList.remove('is-logged-in');
@@ -1002,10 +1021,14 @@
     }
 
     // ── DATA & AI ──
-    async function fetchDataAndInitializeAI() {
-        updateNetworkBadges(true);
-        if(document.getElementById('network-status')) { document.getElementById('network-status').innerText = '🔄 Syncing...'; document.getElementById('network-status').style.color = 'var(--accent)'; }
-        if(document.getElementById('topbar-network')) { document.getElementById('topbar-network').innerText = '🔄 Syncing...'; document.getElementById('topbar-network').style.color = 'var(--accent)'; }
+    
+    // BUG FIX: Merged fetchDataAndInitializeAI and refreshEmployeeList
+    async function refreshAppData(showSyncToast = false) {
+        if (showSyncToast) {
+            updateNetworkBadges(true);
+            if(document.getElementById('network-status')) { document.getElementById('network-status').innerText = '🔄 Syncing...'; document.getElementById('network-status').style.color = 'var(--accent)'; }
+            if(document.getElementById('topbar-network')) { document.getElementById('topbar-network').innerText = '🔄 Syncing...'; document.getElementById('topbar-network').style.color = 'var(--accent)'; }
+        }
         
         const data = await callGoogleAPI({ action: 'getInitData' });
         if (data && data.employees) {
@@ -1015,14 +1038,11 @@
                 const me = employeeList.find(e => e.id.toString() === currentUser.username.toString() || e.name.toLowerCase() === currentUser.username.toLowerCase());
                 if (me) myEmplId = me.id;
             }
-            updateNetworkBadges(true);
-            if (currentUser.role === 'Standby' || currentUser.role === 'Admin' || currentUser.role === 'HR') loadAIModels();
+            if (showSyncToast) updateNetworkBadges(true);
             
-            // Check manifest shortcut action
-            const params = new URLSearchParams(window.location.search);
-            const action = params.get('action');
-            if ((action === 'in' || action === 'out') && currentUser.role !== 'Employee') {
-                setTimeout(() => startKioskMode(action), 1000); 
+            if (currentUser.role === 'Standby' || currentUser.role === 'Admin' || currentUser.role === 'HR') {
+                if (!modelsLoaded) loadAIModels();
+                else buildFaceMatcher();
             }
         }
     }
@@ -1047,19 +1067,6 @@
         } catch (error) { console.error("AI Models failed:", error); }
     }
 
-    async function refreshEmployeeList() {
-        const data = await callGoogleAPI({ action: 'getInitData' });
-        if (data && data.employees) {
-            employeeList = data.employees; shiftsData = data.shifts;
-            populateDropdowns(data.employees);
-            if (currentUser.role === 'Employee') {
-                const me = employeeList.find(e => e.id.toString() === currentUser.username.toString() || e.name.toLowerCase() === currentUser.username.toLowerCase());
-                if (me) myEmplId = me.id;
-            }
-            if (modelsLoaded) buildFaceMatcher();
-        }
-    }
-
     function buildFaceMatcher() {
         if (!window.faceapi) return;
         const ld = [];
@@ -1081,19 +1088,14 @@
             if (btn) { btn.style.transition='transform 0.5s ease'; btn.style.transform='rotate(360deg)'; setTimeout(()=>{ btn.style.transform='none'; btn.style.transition='none'; },500); }
         }
         if (navigator.onLine) {
-            const data = await callGoogleAPI({ action: 'getInitData' });
-            if (data && data.employees) {
-                employeeList = data.employees; shiftsData = data.shifts;
-                populateDropdowns(data.employees);
-                if (modelsLoaded) buildFaceMatcher();
-                const activeTab = document.querySelector('.view-section.active');
-                if (activeTab) {
-                    if (activeTab.id === 'view-history') loadHistory();
-                    else if (activeTab.id === 'view-admin') { const sub = document.querySelector('.sub-tab.active'); if (sub && sub.id === 'sub-btn-dash') loadDashboard(); }
-                }
-                updateNetworkBadges(true);
-                showToast('Data refreshed');
+            await refreshAppData(false);
+            const activeTab = document.querySelector('.view-section.active');
+            if (activeTab) {
+                if (activeTab.id === 'view-history') loadHistory();
+                else if (activeTab.id === 'view-admin') { const sub = document.querySelector('.sub-tab.active'); if (sub && sub.id === 'sub-btn-dash') loadDashboard(); }
             }
+            updateNetworkBadges(true);
+            showToast('Data refreshed');
         }
     }
 
@@ -1205,7 +1207,9 @@
 
     let timeLeft = 120;
     function startKioskTimer() { clearInterval(kioskTimer); timeLeft=120; kioskTimer=setInterval(()=>{ timeLeft--; if(timeLeft<=0) stopKioskMode(); },1000); }
+    
     function stopKioskMode() {
+        // BUG FIX: Clean up closure variables properly
         isKioskScanning=false; identifiedUser=null; blinkState='open';
         clearTimeout(kioskInterval); clearInterval(kioskTimer);
         const video = document.getElementById('kiosk-video');
@@ -1385,7 +1389,7 @@
             if (res.status==='success') {
                 showToast(res.message); playSuccessSound(emp.name,action.toUpperCase());
                 document.getElementById('entry-remarks').value=''; document.getElementById('empl-search-input').value=''; document.getElementById('empl-selected-id').value=''; document.getElementById('live-status-badge').style.display='none'; document.getElementById('shift-select-container').style.display='none'; status.innerText='';
-                refreshEmployeeList();
+                refreshAppData(false);
             } else { status.style.color='var(--danger)'; status.innerText=res.message; }
         } catch(err) { alert("Error: "+err.message); }
     }
@@ -1556,13 +1560,13 @@
     async function saveAdminEmpl() {
         document.getElementById('empl-modal-error').innerText='Saving...';
         const res=await callGoogleAPI({action:'saveEmpl',row:document.getElementById('empl-row').value,id:document.getElementById('empl-id').value,name:document.getElementById('empl-name').value,shift:document.getElementById('empl-shift').value,category:document.getElementById('empl-category').value,leavebal:document.getElementById('empl-leavebal').value,gross:document.getElementById('empl-gross').value,basic:document.getElementById('empl-basic').value,hra:document.getElementById('empl-hra').value,conv:document.getElementById('empl-conv').value,spl:document.getElementById('empl-spl').value,med:document.getElementById('empl-med').value,esi:document.getElementById('empl-esi').value,pf:document.getElementById('empl-pf').value,vpf:document.getElementById('empl-vpf').value,pt:document.getElementById('empl-pt').value,pin:document.getElementById('empl-pin').value});
-        if (res.status==='success') { closeModals(); refreshEmployeeList(); showToast("Employee Saved"); } else document.getElementById('empl-modal-error').innerText=res.message;
+        if (res.status==='success') { closeModals(); refreshAppData(false); showToast("Employee Saved"); } else document.getElementById('empl-modal-error').innerText=res.message;
     }
 
     async function deleteAdminEmpl() {
         if (confirm('Delete employee?')) {
             const res=await callGoogleAPI({action:'deleteEmpl',row:document.getElementById('empl-row').value,user:currentUser.username,role:currentUser.role});
-            if (res.status==='success') { closeModals(); refreshEmployeeList(); showToast("Employee Deleted"); } else alert(res.message);
+            if (res.status==='success') { closeModals(); refreshAppData(false); showToast("Employee Deleted"); } else alert(res.message);
         }
     }
 
@@ -1571,7 +1575,7 @@
     async function saveBulkEmpl() {
         const res=await callGoogleAPI({action:'bulkAddEmployees',csv:document.getElementById('bulk-csv-input').value});
         if (!res||res.status==='error') return showToast(res?.message||'Bulk upload failed','error');
-        closeModals(); refreshEmployeeList(); showToast(`Added ${res.count||0} Employees`);
+        closeModals(); refreshAppData(false); showToast(`Added ${res.count||0} Employees`);
     }
 
     // ── TUTORIAL ──
@@ -1604,6 +1608,12 @@
         const m = document.getElementById('export-month').value;
         if (!m) return alert("Select month.");
         const res = await callGoogleAPI({ action: 'exportCSV', month: m });
+        
+        // BUG FIX: Prevent crash if API returns an error object instead of a string
+        if (!res || typeof res !== 'string') {
+            return showToast(res.message || 'CSV Export failed', 'error');
+        }
+
         const byteCharacters = atob(res);
         const byteNumbers = new Array(byteCharacters.length);
         for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
