@@ -1604,17 +1604,28 @@
     function downloadPayslip() {
         if (!currentPayslipHTML) return;
         showToast("Generating PDF Document...");
+        
+        // FIX: Attach to DOM off-screen so mobile browsers render it properly before capture
         const element = document.createElement('div');
         element.innerHTML = currentPayslipHTML;
+        element.style.position = 'absolute';
+        element.style.left = '-9999px';
+        element.style.top = '0';
+        document.body.appendChild(element); 
         
         const opt = {
-            margin:       0.5,
+            margin:       0.4,
             filename:     currentPayslipTitle + '.pdf',
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true },
+            image:        { type: 'jpeg', quality: 1 },
+            // FIX: Force a desktop-sized 800px viewport so mobile doesn't crush the table
+            html2canvas:  { scale: 2, useCORS: true, windowWidth: 800, width: 800 },
             jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
         };
-        html2pdf().set(opt).from(element).save();
+        
+        html2pdf().set(opt).from(element).save().then(() => {
+            // Clean up the hidden element after the PDF saves
+            document.body.removeChild(element); 
+        });
     }
 
     // ── HISTORY ──
