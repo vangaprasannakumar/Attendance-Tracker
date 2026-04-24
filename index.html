@@ -72,6 +72,7 @@
         .sidebar-logo { padding:22px 18px 18px; border-bottom:1px solid rgba(128,128,128,0.1); display:flex; align-items:center; gap:12px; }
         .sidebar-logo img { height:32px; width:auto; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.4)); }
         .sidebar-logo-text h3 { margin:0; font-size:15px; font-weight:700; color:var(--text-main); }
+        .sidebar-logo-text span { font-size:10px; color:var(--text-muted); letter-spacing:1.5px; text-transform:uppercase; }
         .sidebar-nav { flex:1; padding:14px 10px; overflow-y:auto; }
         .sidebar-section { font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1.4px; padding:10px 10px 4px; font-weight:600; opacity:0.5; }
         .sidebar-item { display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:10px; cursor:pointer; color:var(--text-muted); font-size:13.5px; font-weight:500; margin-bottom:3px; position:relative; overflow:hidden; transition:background 0.2s var(--ease), color 0.2s var(--ease); }
@@ -186,6 +187,7 @@
         body.light-mode .app-container { background:var(--surface); border:1px solid var(--border); box-shadow:0 10px 30px rgba(0,0,0,0.05); }
         body.light-mode #desktop-topbar { background:rgba(255,255,255,0.95); border-bottom:1px solid var(--border); }
         body.light-mode .card, body.light-mode .stat-box, body.light-mode .emp-dash-box { background:rgba(0,0,0,0.02); border-color:rgba(0,0,0,0.06); }
+        body.light-mode .card:hover, body.light-mode .stat-box:hover { background:rgba(0,0,0,0.05); }
         body.light-mode .dropdown-list { background:rgba(255,255,255,0.98); border:1px solid var(--border); }
         body.light-mode .dropdown-item { color:var(--text-main); border-color:var(--border); }
         body.light-mode .modal-content { background:var(--surface); border-color:var(--border); }
@@ -769,9 +771,8 @@
     let currentAction = 'in'; let recentlyPunched = []; let currentPayslipHTML = ""; let currentPayslipTitle = "";
     let activeEnrollId = null; let myEmplId = null;
     
-    // Globals for Kiosk Liveness
+    // Globals for Kiosk
     let isKioskScanning = false; let isEnrollScanning = false;
-    let blinkState = 'open'; let identifiedUser = null; 
 
     // Toast Queue System
     let toastQueue = [];
@@ -862,7 +863,7 @@
 
     function playSuccessSound(name, actionStr) {
         if ('speechSynthesis' in window) {
-            const u = new SpeechSynthesisUtterance(`Thank you, ${name}. Punch ${actionStr} successful.`);
+            const u = new SpeechSynthesisUtterance(name);
             u.rate = 1.0; window.speechSynthesis.speak(u);
         }
     }
@@ -1088,27 +1089,41 @@
         }
     }
 
+    let modelsFailed = false;
+
     async function loadAIModels() {
         if (modelsLoaded) { buildFaceMatcher(); return; }
+        if (modelsFailed) {
+            showToast('AI models failed to load. Check internet and reload app.', 'error');
+            return;
+        }
         try {
             if (!window.faceapi) {
                 await new Promise((resolve, reject) => {
                     const s = document.createElement('script');
                     s.src = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js';
-                    s.onload = resolve; s.onerror = () => reject(new Error('face-api.js failed'));
+                    s.onload = resolve;
+                    s.onerror = () => reject(new Error('face-api.js CDN failed. Check network.'));
                     document.head.appendChild(s);
                 });
             }
+
             const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@0.22.2/weights';
             await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
             await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
             await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
-            modelsLoaded = true; buildFaceMatcher();
-            try { 
-                const wc = document.createElement('canvas'); wc.width = 160; wc.height = 160; 
-                await faceapi.detectSingleFace(wc, new faceapi.TinyFaceDetectorOptions()); 
+            modelsLoaded = true;
+            buildFaceMatcher();
+
+            try {
+                const wc = document.createElement('canvas'); wc.width = 160; wc.height = 160;
+                await faceapi.detectSingleFace(wc, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }));
             } catch(e) {}
-        } catch (error) { console.error("AI Models failed:", error); }
+        } catch (error) {
+            modelsFailed = true;
+            console.error('[AI] Models failed to load:', error);
+            showToast('❌ AI models failed: ' + error.message, 'error');
+        }
     }
 
     const FACE_MATCH_THRESHOLD = 0.6;
@@ -1120,7 +1135,9 @@
             if (emp.faceData && emp.faceData !== '') {
                 try {
                     const parsed = JSON.parse(emp.faceData);
-                    const descriptors = Array.isArray(parsed[0]) ? parsed.map(d => new Float32Array(d)) : [new Float32Array(parsed)];
+                    const descriptors = Array.isArray(parsed[0])
+                        ? parsed.map(d => new Float32Array(d))
+                        : [new Float32Array(parsed)];
                     const valid = descriptors.filter(d => d.length === 128);
                     if (valid.length > 0) {
                         ld.push(new faceapi.LabeledFaceDescriptors(emp.id.toString(), valid));
@@ -1157,29 +1174,25 @@
         }
     }
 
-    // ── KIOSK WITH LIVENESS DETECTION ──
-    function calculateEAR(eye) {
-        const vert1 = Math.hypot(eye[1].x - eye[5].x, eye[1].y - eye[5].y);
-        const vert2 = Math.hypot(eye[2].x - eye[4].x, eye[2].y - eye[4].y);
-        const horiz = Math.hypot(eye[0].x - eye[3].x, eye[0].y - eye[3].y);
-        return (vert1 + vert2) / (2.0 * horiz);
-    }
-
+    // ── KIOSK MODE (INSTANT RECOGNITION + CANVAS TRACKING) ──
     async function startKioskMode(action) {
-        if (!modelsLoaded) { await loadAIModels(); if (!modelsLoaded) return alert("AI still loading."); }
-        if (!faceMatcher) return alert("No employees enrolled yet!");
-        
-        currentAction = action; recentlyPunched = []; 
-        blinkState = 'open'; identifiedUser = null; 
-        
+        if (!modelsLoaded) {
+            await loadAIModels();
+            if (!modelsLoaded) { showToast('AI models not ready. Check internet.', 'error'); return; }
+        }
+        if (!faceMatcher) { showToast('No employees enrolled yet!', 'error'); return; }
+
+        currentAction = action; recentlyPunched = [];
+
         document.getElementById('kiosk-home').style.display = 'none';
         document.getElementById('kiosk-camera-view').style.display = 'block';
         document.getElementById('kiosk-action-title').innerText = `Punch ${action.toUpperCase()}`;
-        const video = document.getElementById('kiosk-video');
+        const video  = document.getElementById('kiosk-video');
         const status = document.getElementById('ai-status');
+        const overlay = document.getElementById('kiosk-overlay');
         document.getElementById('video-container').style.display = 'block';
-        status.style.display = 'block'; status.className = 'status-loading'; status.innerText = "Starting Camera...";
-        
+        status.style.display = 'block'; status.className = 'status-loading'; status.innerText = 'Starting Camera...';
+
         try {
             isKioskScanning = false;
             if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); }
@@ -1192,74 +1205,74 @@
                 const checkVideoReady = setInterval(() => {
                     if (video.readyState >= 3 && video.videoWidth > 0) {
                         clearInterval(checkVideoReady);
-                        startKioskTimer(); isKioskScanning = true;
+                        
+                        overlay.style.display = 'block';
+                        overlay.width = video.videoWidth;
+                        overlay.height = video.videoHeight;
+                        faceapi.matchDimensions(overlay, { width: video.videoWidth, height: video.videoHeight });
+
+                        startKioskTimer(); 
+                        isKioskScanning = true;
                         
                         async function kioskScanLoop() {
                             if (!isKioskScanning) return;
                             try {
-                                const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.3 })).withFaceLandmarks().withFaceDescriptor();
+                                const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.3 }))
+                                                               .withFaceLandmarks()
+                                                               .withFaceDescriptor();
                                 
+                                const ctx = overlay.getContext('2d');
+                                ctx.clearRect(0, 0, overlay.width, overlay.height);
+
                                 if (detection) {
+                                    const resizedDet = faceapi.resizeResults(detection, overlay);
+                                    faceapi.draw.drawDetections(overlay, resizedDet);
+
                                     const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
                                     if (bestMatch.label !== 'unknown') {
                                         const empId = bestMatch.label;
                                         if (!recentlyPunched.includes(empId)) {
                                             
-                                            const leftEye = detection.landmarks.getLeftEye();
-                                            const rightEye = detection.landmarks.getRightEye();
-                                            const ear = (calculateEAR(leftEye) + calculateEAR(rightEye)) / 2;
+                                            // INSTANT MATCH - NO BLINK REQUIRED
+                                            isKioskScanning = false;
+                                            recentlyPunched.push(empId);
+                                            
+                                            const emp = employeeList.find(e => e.id == empId);
+                                            const empName = emp ? emp.name : empId;
+                                            const actionStr = currentAction.toUpperCase();
 
-                                            if (identifiedUser !== empId) {
-                                                identifiedUser = empId;
-                                                blinkState = 'open';
-                                                const emp = employeeList.find(e => e.id == empId);
-                                                status.className = 'status-warning'; 
-                                                status.style.color = 'var(--warning)';
-                                                status.innerText = `👤 ${emp ? emp.name : empId} — Please BLINK to confirm`;
-                                            } else {
-                                                if (ear < 0.25) {
-                                                    blinkState = 'closed'; 
-                                                } else if (ear > 0.25 && blinkState === 'closed') {
-                                                    isKioskScanning = false;
-                                                    recentlyPunched.push(empId);
-                                                    identifiedUser = null;
-                                                    blinkState = 'open';
-                                                    
-                                                    const emp = employeeList.find(e => e.id == empId);
-                                                    const empName = emp ? emp.name : empId;
-                                                    const actionStr = currentAction.toUpperCase();
+                                            // Draw the name temporarily
+                                            const drawBox = new faceapi.draw.DrawBox(resizedDet.detection.box, { label: empName });
+                                            drawBox.draw(overlay);
 
-                                                    showKioskSuccess(empName, actionStr);
-                                                    playSuccessSound(empName, actionStr);
+                                            showKioskSuccess(empName, actionStr);
+                                            playSuccessSound(empName, actionStr);
 
-                                                    status.className = 'status-success'; 
-                                                    status.style.color = 'var(--success)';
-                                                    status.innerText = `✅ ${empName} — Punch ${actionStr} Successful`;
-                                                    startKioskTimer();
+                                            status.className = 'status-success'; 
+                                            status.style.color = 'var(--success)';
+                                            status.innerText = `✅ ${empName} — Punch ${actionStr} Successful`;
+                                            startKioskTimer();
 
-                                                    callGoogleAPI({ action:'logAttendance', emplId: emp ? emp.id : empId, emplName: empName, type:currentAction, remarks:'AI Camera (Liveness Verified)', loggedByUser:'Kiosk', offlineTimeIso:null, selectedShift: emp ? emp.shift : 'REGULAR' })
-                                                    .then(res => {
-                                                        if (res.status !== 'success') {
-                                                            showToast('⚠️ Sync issue: ' + res.message, 'error');
-                                                            recentlyPunched = recentlyPunched.filter(id => id !== empId);
-                                                        }
-                                                    });
-
-                                                    setTimeout(() => {
-                                                        hideKioskSuccess();
-                                                        status.className='status-loading'; status.innerText="Ready for next person..."; isKioskScanning=true; kioskScanLoop(); 
-                                                    }, 2500);
-                                                    return; 
+                                            callGoogleAPI({ action:'logAttendance', emplId: emp ? emp.id : empId, emplName: empName, type:currentAction, remarks:'AI Camera (Instant Recognition)', loggedByUser:'Kiosk', offlineTimeIso:null, selectedShift: emp ? emp.shift : 'REGULAR' })
+                                            .then(res => {
+                                                if (res.status !== 'success') {
+                                                    showToast('⚠️ Sync issue: ' + res.message, 'error');
+                                                    recentlyPunched = recentlyPunched.filter(id => id !== empId);
                                                 }
-                                            }
+                                            });
+
+                                            setTimeout(() => {
+                                                hideKioskSuccess();
+                                                ctx.clearRect(0, 0, overlay.width, overlay.height);
+                                                status.className='status-loading'; status.innerText="Ready for next person..."; isKioskScanning=true; kioskScanLoop(); 
+                                            }, 2500);
+                                            return; 
                                         }
                                     } else { 
-                                        identifiedUser = null; blinkState = 'open'; 
                                         status.className='status-error'; status.innerText="Face not recognized. Move closer."; 
                                     }
                                     if (isKioskScanning) kioskInterval = setTimeout(kioskScanLoop, 150);
                                 } else {
-                                    identifiedUser = null; blinkState = 'open'; 
                                     status.className='status-loading'; status.innerText="Looking for a face...";
                                     if (isKioskScanning) kioskInterval = setTimeout(kioskScanLoop, 400);
                                 }
@@ -1299,12 +1312,10 @@
     
     function stopKioskMode() {
         isKioskScanning = false; 
-        identifiedUser = null; 
-        blinkState = 'open';
-        
         clearTimeout(kioskInterval); clearInterval(kioskTimer);
         const video = document.getElementById('kiosk-video');
         if (video.srcObject) video.srcObject.getTracks().forEach(t=>t.stop());
+        document.getElementById('kiosk-overlay').style.display='none';
         document.getElementById('kiosk-camera-view').style.display='none';
         document.getElementById('video-container').style.display='none';
         document.getElementById('ai-status').style.display='none';
@@ -1312,7 +1323,7 @@
         document.getElementById('kiosk-home').style.display='block';
     }
 
-    // ── ENROLLMENT ──
+    // ── ENROLLMENT (WITH CANVAS TRACKING) ──
     function renderEnrollmentList() {
         let html = '';
         employeeList.forEach((emp, idx) => {
@@ -1332,6 +1343,7 @@
         document.getElementById('admin-empl-container').style.display = 'none';
         document.getElementById('enrollment-camera-view').style.display = 'block';
         const video = document.getElementById('enroll-video');
+        const overlay = document.getElementById('enroll-overlay');
         const status = document.getElementById('enroll-status');
         status.className='status-loading'; status.innerText="Starting Camera...";
         const TARGET_SAMPLES = 5; let collectedDescriptors = [];
@@ -1346,6 +1358,12 @@
                 const checkVideoReady = setInterval(() => {
                     if (video.readyState >= 3 && video.videoWidth > 0) {
                         clearInterval(checkVideoReady);
+                        
+                        overlay.style.display = 'block';
+                        overlay.width = video.videoWidth;
+                        overlay.height = video.videoHeight;
+                        faceapi.matchDimensions(overlay, { width: video.videoWidth, height: video.videoHeight });
+
                         isEnrollScanning = true;
                         status.innerText = `Look directly at camera. Capturing 0/${TARGET_SAMPLES}...`;
 
@@ -1354,7 +1372,12 @@
                             try {
                                 const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.3 })).withFaceLandmarks().withFaceDescriptor();
                                 
+                                const ctx = overlay.getContext('2d');
+                                ctx.clearRect(0, 0, overlay.width, overlay.height);
+
                                 if (detection) {
+                                    faceapi.draw.drawDetections(overlay, faceapi.resizeResults(detection, overlay));
+
                                     collectedDescriptors.push(Array.from(detection.descriptor));
                                     status.innerText = `Capturing ${collectedDescriptors.length}/${TARGET_SAMPLES}...`;
                                     
@@ -1386,6 +1409,7 @@
         isEnrollScanning = false;
         const video = document.getElementById('enroll-video');
         if (video.srcObject) video.srcObject.getTracks().forEach(t=>t.stop());
+        document.getElementById('enroll-overlay').style.display='none';
         document.getElementById('enrollment-camera-view').style.display='none';
         document.getElementById('admin-empl-container').style.display='block';
         activeEnrollId = null; renderEnrollmentList();
