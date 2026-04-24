@@ -1603,22 +1603,18 @@
 
     function downloadPayslip() {
         if (!currentPayslipHTML) return;
-        showToast("Generating PDF Document...", "warn");
+        showToast("Generating PDF Document...");
+        const element = document.createElement('div');
+        element.innerHTML = currentPayslipHTML;
         
         const opt = {
-            margin:       0.4,
+            margin:       0.5,
             filename:     currentPayslipTitle + '.pdf',
-            image:        { type: 'jpeg', quality: 1 },
-            // Force a desktop-sized 800px viewport so mobile doesn't crush the table
-            html2canvas:  { scale: 2, useCORS: true, windowWidth: 800 },
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true },
             jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
         };
-        
-        // FIX: Pass the raw HTML string directly. html2pdf will securely build 
-        // a hidden iframe to render it perfectly on mobile!
-        html2pdf().set(opt).from(currentPayslipHTML).save().then(() => {
-            showToast("PDF Downloaded Successfully");
-        });
+        html2pdf().set(opt).from(element).save();
     }
 
     // ── HISTORY ──
