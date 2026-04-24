@@ -38,7 +38,6 @@
         @keyframes statPop      { 0%{opacity:0;transform:scale(0.88) translateY(10px);} 60%{transform:scale(1.03);} 100%{opacity:1;transform:scale(1) translateY(0);} }
         @keyframes navBounce    { 0%,100%{transform:scale(1);} 40%{transform:scale(0.88);} 70%{transform:scale(1.06);} }
         @keyframes bottomNavIn  { from{opacity:0;transform:translate(-50%,30px);} to{opacity:1;transform:translate(-50%,0);} }
-        @keyframes kiosk-pop    { 0%{opacity:0;transform:scale(0.6);} 70%{transform:scale(1.05);} 100%{opacity:1;transform:scale(1);} }
 
         /* ── LOADER ── */
         #loader { position:fixed; top:0; left:0; width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:99999; background:radial-gradient(circle at top right, rgba(59,130,246,0.15), transparent 50%), var(--bg-dark); color:#f4f4f5; transition:opacity 0.6s ease-out; }
@@ -88,7 +87,7 @@
         
         .sidebar-logout { display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:10px; color:#f87171; cursor:pointer; font-size:13px; font-weight:500; transition:background 0.2s; }
         .sidebar-logout:hover { background:rgba(239,68,68,0.1); }
-        .sidebar-logout svg { width:18px; height:18px; flex-shrink:0; } /* Restored sizing */
+        .sidebar-logout svg { width:18px; height:18px; flex-shrink:0; }
 
         /* ── DESKTOP TOP BAR & MOBILE HEADER ── */
         #desktop-topbar { display:none; height:var(--topbar-h); padding:0 28px; align-items:center; justify-content:space-between; background:rgba(13,13,19,0.9); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:100; flex-shrink:0; }
@@ -409,14 +408,6 @@
             </div>
             <div id="timer-display">120</div>
             <div id="ai-status" class="status-loading">Looking for a face...</div>
-            <!-- SUCCESS OVERLAY: shown instantly on blink confirmation -->
-            <div id="kiosk-success-overlay" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.82);flex-direction:column;align-items:center;justify-content:center;text-align:center;backdrop-filter:blur(6px);">
-                <div style="background:linear-gradient(135deg,rgba(16,185,129,0.22),rgba(16,185,129,0.06));border:2px solid var(--success);border-radius:24px;padding:40px 48px;max-width:340px;width:90%;animation:kiosk-pop 0.25s cubic-bezier(0.34,1.56,0.64,1);">
-                    <div style="font-size:64px;line-height:1;margin-bottom:16px;">✅</div>
-                    <div id="kiosk-success-name" style="font-size:26px;font-weight:800;color:#fff;margin-bottom:8px;letter-spacing:-0.3px;"></div>
-                    <div id="kiosk-success-action" style="font-size:16px;font-weight:600;color:var(--success);letter-spacing:0.3px;"></div>
-                </div>
-            </div>
             <button class="btn-main" style="background:transparent;border:2px solid rgba(128,128,128,0.2);box-shadow:none;color:var(--text-main);" onclick="stopKioskMode()">Cancel & Close</button>
         </div>
     </div>
@@ -1086,63 +1077,25 @@
         }
     }
 
-    // FIX: modelsFailed flag so we never show misleading "still loading" forever
-    let modelsFailed = false;
-
     async function loadAIModels() {
         if (modelsLoaded) { buildFaceMatcher(); return; }
-        if (modelsFailed) {
-            showToast('AI models failed to load. Check internet and reload app.', 'error');
-            return;
-        }
         try {
             if (!window.faceapi) {
                 await new Promise((resolve, reject) => {
                     const s = document.createElement('script');
-                    // FIX: pinned to exact npm version — no @master drift
                     s.src = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js';
-                    s.onload = resolve;
-                    s.onerror = () => reject(new Error('face-api.js CDN failed. Check network.'));
+                    s.onload = resolve; s.onerror = () => reject(new Error('face-api.js failed'));
                     document.head.appendChild(s);
                 });
             }
 
-            // ── WebGL Fallback for Unsupported Mobile Devices ──
-            if (window.faceapi && faceapi.tf) {
-                try {
-                    await faceapi.tf.setBackend('webgl');
-                    await faceapi.tf.ready();
-                } catch(e) {
-                    console.warn('[AI] WebGL not supported, falling back to CPU');
-                    await faceapi.tf.setBackend('cpu');
-                    await faceapi.tf.ready();
-                }
-            }
-
-            // FIX: pinned weights URL to @0.22.2 — NOT @master which can drift/break
-            const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@0.22.2/weights';
+            const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
             await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
             await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
             await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
-            modelsLoaded = true;
-            buildFaceMatcher();
-
-            // Warm-up: initialise GPU context to avoid first-frame stutter
-            try {
-                const wc = document.createElement('canvas'); wc.width = wc.height = 160;
-                await faceapi.detectSingleFace(wc, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }));
-            } catch(e) {
-                try { await faceapi.tf.setBackend('cpu'); await faceapi.tf.ready(); } catch(e2) {}
-            }
-        } catch (error) {
-            modelsFailed = true;
-            console.error('[AI] Models failed to load:', error);
-            showToast('❌ AI models failed: ' + error.message, 'error');
-        }
+            modelsLoaded = true; buildFaceMatcher();
+        } catch (error) { console.error("AI Models failed:", error); }
     }
-
-    // FIX: threshold raised 0.55→0.6 for factory floor mixed-lighting tolerance
-    const FACE_MATCH_THRESHOLD = 0.6;
 
     function buildFaceMatcher() {
         if (!window.faceapi) return;
@@ -1151,23 +1104,12 @@
             if (emp.faceData && emp.faceData !== '') {
                 try {
                     const parsed = JSON.parse(emp.faceData);
-                    const descriptors = Array.isArray(parsed[0])
-                        ? parsed.map(d => new Float32Array(d))
-                        : [new Float32Array(parsed)];
-                    // FIX: guard — only add if descriptors are valid 128-float arrays
-                    const valid = descriptors.filter(d => d.length === 128);
-                    if (valid.length > 0) {
-                        ld.push(new faceapi.LabeledFaceDescriptors(emp.id.toString(), valid));
-                    } else {
-                        console.warn(`[FaceMatcher] ${emp.name} (${emp.id}): faceData exists but has no valid 128-float descriptors. Re-enroll.`);
-                    }
-                } catch(e) {
-                    console.warn(`[FaceMatcher] ${emp.name} (${emp.id}): faceData JSON parse failed.`, e);
-                }
+                    const descriptors = Array.isArray(parsed[0]) ? parsed.map(d => new Float32Array(d)) : [new Float32Array(parsed)];
+                    ld.push(new faceapi.LabeledFaceDescriptors(emp.id.toString(), descriptors));
+                } catch(e) {}
             }
         });
-        faceMatcher = ld.length > 0 ? new faceapi.FaceMatcher(ld, FACE_MATCH_THRESHOLD) : null;
-        console.log(`[FaceMatcher] Built with ${ld.length} enrolled employees. Threshold: ${FACE_MATCH_THRESHOLD}`);
+        faceMatcher = ld.length > 0 ? new faceapi.FaceMatcher(ld, 0.55) : null;
     }
 
     async function hardRefreshApp(event) {
@@ -1205,53 +1147,44 @@
     }
 
     async function startKioskMode(action) {
-        if (!modelsLoaded) {
-            await loadAIModels();
-            if (!modelsLoaded) { showToast('AI models not ready. Check internet.', 'error'); return; }
-        }
-        if (!faceMatcher) { showToast('No employees enrolled yet!', 'error'); return; }
-
-        currentAction = action; recentlyPunched = [];
-        blinkState = 'open'; identifiedUser = null;
-
+        if (!modelsLoaded) { await loadAIModels(); if (!modelsLoaded) return alert("AI still loading."); }
+        if (!faceMatcher) return alert("No employees enrolled yet!");
+        
+        currentAction = action; recentlyPunched = []; 
+        blinkState = 'open'; identifiedUser = null; 
+        
         document.getElementById('kiosk-home').style.display = 'none';
         document.getElementById('kiosk-camera-view').style.display = 'block';
         document.getElementById('kiosk-action-title').innerText = `Punch ${action.toUpperCase()}`;
-        const video  = document.getElementById('kiosk-video');
+        const video = document.getElementById('kiosk-video');
         const status = document.getElementById('ai-status');
         document.getElementById('video-container').style.display = 'block';
-        status.style.display = 'block'; status.className = 'status-loading'; status.innerText = 'Starting Camera...';
-
+        status.style.display = 'block'; status.className = 'status-loading'; status.innerText = "Starting Camera...";
+        
         try {
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia)
-                throw new Error('Camera not supported or HTTPS missing.');
-
-            const streamPromise  = navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Camera timeout. Check permissions.')), 8000));
-
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error("Camera not supported or HTTPS missing.");
+            const streamPromise = navigator.mediaDevices.getUserMedia({ video: { facingMode:'user' } });
+            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Camera initialization timeout. Check permissions.")), 8000));
             video.srcObject = await Promise.race([streamPromise, timeoutPromise]);
+            
+            video.play().catch(e => {
+                status.className = 'status-error'; 
+                status.innerText = "Tap screen to allow camera play.";
+            });
 
-            // FIX #1: assign onplay BEFORE play() — autoplay attribute fires onplay
-            // before the handler is assigned when play() is called first
             video.onplay = () => {
-                startKioskTimer();
-                isKioskScanning = true;
-
+                startKioskTimer(); isKioskScanning = true;
                 async function kioskScanLoop() {
                     if (!isKioskScanning) return;
                     try {
-                        const detection = await faceapi
-                            .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.5 }))
-                            .withFaceLandmarks()
-                            .withFaceDescriptor();
-
+                        const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize:224, scoreThreshold:0.4 })).withFaceLandmarks().withFaceDescriptor();
                         if (detection) {
                             const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
                             if (bestMatch.label !== 'unknown') {
                                 const empId = bestMatch.label;
                                 if (!recentlyPunched.includes(empId)) {
-                                    const leftEye  = detection.landmarks.getLeftEye();
+                                    
+                                    const leftEye = detection.landmarks.getLeftEye();
                                     const rightEye = detection.landmarks.getRightEye();
                                     const ear = (calculateEAR(leftEye) + calculateEAR(rightEye)) / 2;
 
@@ -1259,108 +1192,53 @@
                                         identifiedUser = empId;
                                         blinkState = 'open';
                                         const emp = employeeList.find(e => e.id == empId);
-                                        status.className  = 'status-warning';
+                                        status.className = 'status-warning'; 
                                         status.style.color = 'var(--warning)';
-                                        status.innerText  = `👤 ${emp ? emp.name : empId} — Please BLINK to confirm`;
+                                        status.innerText = `Recognized ${emp ? emp.name : empId}. Please BLINK to punch...`;
                                     } else {
                                         if (ear < 0.25) {
-                                            blinkState = 'closed';
+                                            blinkState = 'closed'; 
                                         } else if (ear > 0.25 && blinkState === 'closed') {
-                                            // ── BLINK CONFIRMED ──
                                             isKioskScanning = false;
                                             recentlyPunched.push(empId);
                                             identifiedUser = null;
                                             blinkState = 'open';
-
-                                            const emp       = employeeList.find(e => e.id == empId);
-                                            const empName   = emp ? emp.name : empId;
-                                            const actionStr = currentAction.toUpperCase();
-
-                                            // FIX: success overlay + voice fire IMMEDIATELY on blink
-                                            // — no waiting for API response (saves 3-8 seconds)
-                                            showKioskSuccess(empName, actionStr);
-                                            playSuccessSound(empName, actionStr);
-
-                                            status.className  = 'status-success';
+                                            
+                                            const emp = employeeList.find(e => e.id == empId);
+                                            status.className = 'status-success'; 
                                             status.style.color = 'var(--success)';
-                                            status.innerText  = `✅ ${empName} — Punch ${actionStr} Successful`;
-                                            startKioskTimer();
+                                            status.innerText = `Blink Verified! Logging...`;
 
-                                            // API runs in background — user already confirmed
-                                            callGoogleAPI({
-                                                action: 'logAttendance',
-                                                emplId: emp ? emp.id : empId,
-                                                emplName: empName,
-                                                type: currentAction,
-                                                remarks: 'AI Kiosk — Liveness Verified',
-                                                loggedByUser: 'Kiosk',
-                                                offlineTimeIso: null,
-                                                selectedShift: emp ? emp.shift : 'REGULAR'
-                                            }).then(res => {
-                                                if (res.status !== 'success') {
-                                                    showToast('⚠️ Sync issue: ' + res.message, 'error');
-                                                    recentlyPunched = recentlyPunched.filter(id => id !== empId);
+                                            callGoogleAPI({ action:'logAttendance', emplId: emp.id, emplName: emp.name, type:currentAction, remarks:'AI Camera (Liveness Verified)', loggedByUser:'Kiosk', offlineTimeIso:null, selectedShift: emp.shift })
+                                            .then(res => {
+                                                if (res.status === 'success') {
+                                                    showToast(res.message); playSuccessSound(emp.name, currentAction.toUpperCase());
+                                                    status.innerText = res.message; startKioskTimer();
+                                                    setTimeout(() => { status.className='status-loading'; status.innerText="Ready for next person..."; isKioskScanning=true; kioskScanLoop(); }, 3500);
+                                                } else {
+                                                    status.className = 'status-error'; status.innerText = res.message;
+                                                    setTimeout(() => { recentlyPunched=recentlyPunched.filter(id=>id!==empId); status.className='status-loading'; status.innerText="Ready for next person..."; isKioskScanning=true; kioskScanLoop(); }, 5000);
                                                 }
                                             });
-
-                                            setTimeout(() => {
-                                                hideKioskSuccess();
-                                                status.className = 'status-loading';
-                                                status.innerText  = 'Ready for next person...';
-                                                isKioskScanning   = true;
-                                                kioskScanLoop();
-                                            }, 2500);
-                                            return;
+                                            return; 
                                         }
                                     }
                                 }
-                            } else {
-                                identifiedUser = null; blinkState = 'open';
-                                status.className = 'status-error';
-                                status.innerText = 'Face not recognized. Move closer or improve lighting.';
+                            } else { 
+                                identifiedUser = null; blinkState = 'open'; 
+                                status.className='status-error'; status.innerText="Face not recognized. Move closer."; 
                             }
-                            if (isKioskScanning) kioskInterval = setTimeout(kioskScanLoop, 150);
                         } else {
-                            identifiedUser = null; blinkState = 'open';
-                            status.className = 'status-loading';
-                            status.innerText  = 'Looking for a face...';
-                            if (isKioskScanning) kioskInterval = setTimeout(kioskScanLoop, 600);
+                            identifiedUser = null; blinkState = 'open'; 
+                            status.className='status-loading'; status.innerText="Looking for a face...";
                         }
-                    } catch (err) {
-                        if (err.message && (err.message.includes('WebGL') || err.message.includes('backend'))) {
-                            status.className = 'status-error';
-                            status.innerText  = 'GPU Error. Retrying on CPU...';
-                            try { await faceapi.tf.setBackend('cpu'); await faceapi.tf.ready(); } catch(e) {}
-                        }
-                        if (isKioskScanning) kioskInterval = setTimeout(kioskScanLoop, 600);
-                    }
+                    } catch(err) { }
+                    
+                    if (isKioskScanning) kioskInterval = setTimeout(kioskScanLoop, 150);
                 }
                 kioskScanLoop();
             };
-
-            // FIX #1 continued: play() called AFTER onplay is registered
-            video.play().catch(e => {
-                status.className = 'status-error';
-                status.innerText  = 'Tap screen to allow camera play.';
-            });
-
-        } catch(e) {
-            status.className = 'status-error';
-            status.innerText  = 'Camera Error: ' + e.message;
-        }
-    }
-
-    // ── KIOSK INSTANT SUCCESS OVERLAY ──
-    function showKioskSuccess(name, action) {
-        const overlay = document.getElementById('kiosk-success-overlay');
-        if (!overlay) return;
-        document.getElementById('kiosk-success-name').innerText   = name;
-        document.getElementById('kiosk-success-action').innerText = `Punch ${action} Successful`;
-        overlay.style.display = 'flex';
-    }
-    function hideKioskSuccess() {
-        const overlay = document.getElementById('kiosk-success-overlay');
-        if (overlay) overlay.style.display = 'none';
+        } catch(e) { status.className='status-error'; status.innerText="Camera Error: "+e.message; }
     }
 
     let timeLeft = 120;
@@ -1405,105 +1283,60 @@
     }
 
     async function startEnrollment(empId) {
-        if (!modelsLoaded) {
-            await loadAIModels();
-            if (!modelsLoaded) { showToast('AI models not ready. Check internet.', 'error'); return; }
-        }
-        isEnrollScanning = false; // FIX #7: reset before start — prevents duplicate scan loops on retry
+        if (!modelsLoaded) { await loadAIModels(); if (!modelsLoaded) return alert("AI still loading."); }
         activeEnrollId = empId;
         document.getElementById('admin-empl-container').style.display = 'none';
         document.getElementById('enrollment-camera-view').style.display = 'block';
-        const video  = document.getElementById('enroll-video');
+        const video = document.getElementById('enroll-video');
         const status = document.getElementById('enroll-status');
-        status.className = 'status-loading'; status.innerText = 'Starting Camera...';
-        const TARGET_SAMPLES = 5;
-        let collectedDescriptors = [];
+        status.className='status-loading'; status.innerText="Starting Camera...";
+        const TARGET_SAMPLES = 5; let collectedDescriptors = [];
         try {
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia)
-                throw new Error('Camera not supported or HTTPS missing.');
-
-            const streamPromise  = navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Camera timeout. Check permissions.')), 8000));
-
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error("Camera not supported or HTTPS missing.");
+            const streamPromise = navigator.mediaDevices.getUserMedia({ video: { facingMode:'user' } });
+            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Camera initialization timeout. Check permissions.")), 8000));
             video.srcObject = await Promise.race([streamPromise, timeoutPromise]);
-            status.innerText = `Look directly at camera. Capturing 0/${TARGET_SAMPLES}...`;
+            
+            status.innerText = `Look directly at the camera. Capturing 0/${TARGET_SAMPLES}...`;
+            
+            video.play().catch(e => {
+                status.className = 'status-error'; 
+                status.innerText = "Tap screen to allow camera play.";
+            });
 
-            // FIX #1: onplay assigned BEFORE play() — autoplay fires onplay
-            // before handler is set when play() is called first
             video.onplay = async () => {
                 isEnrollScanning = true;
                 let noFaceFrames = 0;
-
                 async function enrollScanLoop() {
                     if (!isEnrollScanning) return;
                     try {
-                        const detection = await faceapi
-                            .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.5 }))
-                            .withFaceLandmarks()
-                            .withFaceDescriptor();
-
+                        const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize:224, scoreThreshold:0.4 })).withFaceLandmarks().withFaceDescriptor();
                         if (detection) {
                             noFaceFrames = 0;
                             collectedDescriptors.push(Array.from(detection.descriptor));
                             status.innerText = `Capturing ${collectedDescriptors.length}/${TARGET_SAMPLES}...`;
-
                             if (collectedDescriptors.length >= TARGET_SAMPLES) {
-                                isEnrollScanning = false;
-                                status.className = 'status-success';
-                                status.innerText  = `${TARGET_SAMPLES} samples captured! Saving...`;
-
+                                isEnrollScanning = false; status.className='status-success'; status.innerText=`${TARGET_SAMPLES} samples captured! Saving...`;
                                 const dataString = JSON.stringify(collectedDescriptors);
-                                const res = await callGoogleAPI({
-                                    action: 'saveFaceData',
-                                    emplId: activeEnrollId,
-                                    faceDataStr: dataString
-                                });
-
-                                if (res && res.status === 'success') {
-                                    status.innerText = 'Enrolled Successfully! ✅';
-                                    showToast('Face Enrolled Successfully');
-                                    const emp = employeeList.find(e => e.id == activeEnrollId);
-                                    if (emp) emp.faceData = dataString;
-                                    buildFaceMatcher();
-                                    setTimeout(stopEnrollment, 1500);
-                                } else {
-                                    status.className = 'status-error';
-                                    status.innerText  = 'Save Failed: ' + (res ? res.message : 'Network error');
-                                    collectedDescriptors = [];
-                                    isEnrollScanning = true;
-                                    setTimeout(enrollScanLoop, 300);
-                                }
+                                const res = await callGoogleAPI({ action:'saveFaceData', emplId:activeEnrollId, faceDataStr:dataString });
+                                if (res.status === 'success') {
+                                    status.innerText="Enrolled Successfully!"; showToast("Face Enrolled Successfully");
+                                    const emp = employeeList.find(e=>e.id==activeEnrollId); if (emp) emp.faceData=dataString;
+                                    buildFaceMatcher(); setTimeout(stopEnrollment,1500);
+                                } else { status.className='status-error'; status.innerText="Save Failed: "+res.message; collectedDescriptors=[]; isEnrollScanning=true; }
                                 return;
                             }
                         } else {
                             noFaceFrames++;
-                            if (noFaceFrames > 8)
-                                status.innerText = 'No face detected. Move to better lighting, face the camera directly.';
+                            if (noFaceFrames > 8) status.innerText = "No face detected. Move to better lighting.";
                         }
-                    } catch(err) {
-                        if (err.message && (err.message.includes('WebGL') || err.message.includes('backend'))) {
-                            status.className = 'status-error';
-                            status.innerText  = 'GPU Error. Retrying on CPU...';
-                            try { await faceapi.tf.setBackend('cpu'); await faceapi.tf.ready(); } catch(e) {}
-                        }
-                    }
-                    if (isEnrollScanning) setTimeout(enrollScanLoop, 300);
+                    } catch(err) {}
+                    
+                    if (isEnrollScanning) setTimeout(enrollScanLoop,300);
                 }
                 enrollScanLoop();
             };
-
-            // FIX #1 continued: play() called AFTER onplay registered
-            video.play().catch(e => {
-                status.className = 'status-error';
-                status.innerText  = 'Tap screen to allow camera.';
-            });
-
-        } catch(e) {
-            isEnrollScanning = false; // FIX #7: reset on error path
-            status.className = 'status-error';
-            status.innerText  = 'Camera Error: ' + e.message;
-        }
+        } catch(e) { status.className='status-error'; status.innerText="Camera Error: "+e.message; }
     }
 
     function stopEnrollment() {
