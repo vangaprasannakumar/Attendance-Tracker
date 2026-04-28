@@ -1,11 +1,12 @@
 {
   "name": "Capco Workforce",
   "short_name": "Capco HR",
-  "description": "Enterprise HR, Payroll, and Attendance System for Capco Capacitor",
+  "description": "Enterprise HR, Payroll, and AI Attendance System for Capco Capacitor — Muppireddypally, Telangana",
 
-  "id": "./index.html",
-  "start_url": "./index.html",
-  "scope": "./",
+  "id": "/index.html",
+
+  "start_url": "/index.html",
+  "scope": "/",
 
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone"],
@@ -39,8 +40,8 @@
     {
       "name": "Punch IN",
       "short_name": "IN",
-      "description": "Open the attendance entry screen to punch in",
-      "url": "./index.html?action=in",
+      "description": "Open the kiosk screen and immediately begin face recognition for punch-in",
+      "url": "/index.html?action=in",
       "icons": [
         {
           "src": "https://i.postimg.cc/ZnP5N30s/launchericon_192x192.png",
@@ -52,8 +53,8 @@
     {
       "name": "Punch OUT",
       "short_name": "OUT",
-      "description": "Open the attendance entry screen to punch out",
-      "url": "./index.html?action=out",
+      "description": "Open the kiosk screen and immediately begin face recognition for punch-out",
+      "url": "/index.html?action=out",
       "icons": [
         {
           "src": "https://i.postimg.cc/ZnP5N30s/launchericon_192x192.png",
@@ -69,10 +70,28 @@
       "src": "https://i.postimg.cc/C1fJDfZC/Capco-Logo.png?v=final",
       "sizes": "540x720",
       "type": "image/png",
-      "label": "Capco HRMS Dashboard"
+      "form_factor": "narrow",
+      "label": "Attendance Entry — search employee and punch IN or OUT"
+    },
+    {
+      "src": "https://i.postimg.cc/C1fJDfZC/Capco-Logo.png?v=final",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Admin Dashboard — live staff overview with biometric avatars"
+    },
+    {
+      "src": "https://i.postimg.cc/C1fJDfZC/Capco-Logo.png?v=final",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Face Recognition Kiosk — instant AI punch-in terminal"
     }
   ],
 
   "categories": ["business", "productivity"],
-  "lang": "en-IN"
+  "lang": "en-IN",
+
+  "related_applications": [],
+  "prefer_related_applications": false
 }
