@@ -687,10 +687,27 @@
                 <input type="hidden" id="leave-empl-id">
                 <div id="leave-empl-dropdown" class="dropdown-list"></div>
             </div>
-            <label for="leave-date" style="font-size:12px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;display:block;">Leave Date</label>
-            <input type="date" id="leave-date">
-            <label for="leave-remarks" style="font-size:12px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;display:block;">Reason</label>
-            <input type="text" id="leave-remarks" placeholder="e.g. Annual Leave, Sick Leave">
+
+            <!-- Date range: From / To -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <div>
+                    <label for="leave-date-from" style="font-size:12px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;display:block;">From Date</label>
+                    <input type="date" id="leave-date-from" style="margin:0;" oninput="updateLeaveDayCount()">
+                </div>
+                <div>
+                    <label for="leave-date-to" style="font-size:12px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;display:block;">To Date</label>
+                    <input type="date" id="leave-date-to" style="margin:0;" oninput="updateLeaveDayCount()">
+                </div>
+            </div>
+
+            <!-- Live preview: day count -->
+            <div id="leave-day-preview" style="display:none;margin-top:10px;padding:11px 16px;background:rgba(59,130,246,0.07);border:1px solid rgba(59,130,246,0.2);border-radius:12px;font-size:13px;">
+                <span id="leave-day-count-text" style="color:var(--text-main);font-weight:600;"></span>
+                <span style="color:var(--text-muted);font-size:12px;display:block;margin-top:3px;">Sundays and public holidays in the range are automatically skipped.</span>
+            </div>
+
+            <label for="leave-remarks" style="font-size:12px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;margin-top:4px;display:block;">Reason</label>
+            <input type="text" id="leave-remarks" placeholder="e.g. Annual Leave, Sick Leave, Medical">
             <button class="btn-main" style="margin-top:0;background:var(--danger);box-shadow:0 4px 14px rgba(239,68,68,0.3);" onclick="submitAdminLeave()">Mark as Leave</button>
         </div>
 
@@ -2078,23 +2095,80 @@
     }
 
     // ── ADMIN: LEAVE ──
+    // Live day-count preview: counts working days (skips Sundays client-side).
+    // Public holidays are skipped server-side; we only skip Sundays here for a
+    // quick estimate — the server returns the actual days deducted.
+    function updateLeaveDayCount() {
+        const from  = document.getElementById('leave-date-from').value;
+        const to    = document.getElementById('leave-date-to').value;
+        const box   = document.getElementById('leave-day-preview');
+        const text  = document.getElementById('leave-day-count-text');
+        if (!from || !to) { box.style.display = 'none'; return; }
+        const fDate = new Date(from), tDate = new Date(to);
+        if (tDate < fDate) { text.innerText = '⚠️ "To" date must be on or after "From" date.'; box.style.display = 'block'; return; }
+        let count = 0;
+        const cur = new Date(fDate);
+        while (cur <= tDate) {
+            if (cur.getDay() !== 0) count++; // skip Sundays (0)
+            cur.setDate(cur.getDate() + 1);
+        }
+        text.innerText = `📅 ${count} working day${count !== 1 ? 's' : ''} selected (${from} → ${to})`;
+        box.style.display = 'block';
+    }
+
     async function submitAdminLeave() {
-        const id   = document.getElementById('leave-empl-id').value;
-        const date = document.getElementById('leave-date').value;
-        const rem  = document.getElementById('leave-remarks').value;
-        if (!id || !date) { showToast('Select employee and date.', 'warn'); return; }
+        const id       = document.getElementById('leave-empl-id').value;
+        const dateFrom = document.getElementById('leave-date-from').value;
+        const dateTo   = document.getElementById('leave-date-to').value;
+        const rem      = document.getElementById('leave-remarks').value;
+
+        if (!id)       { showToast('Please select an employee.', 'warn'); return; }
+        if (!dateFrom) { showToast('Please select a From date.', 'warn'); return; }
+        if (!dateTo)   { showToast('Please select a To date.', 'warn'); return; }
+
+        const fDate = new Date(dateFrom), tDate = new Date(dateTo);
+        if (tDate < fDate) { showToast('"To" date must be on or after "From" date.', 'error'); return; }
+
         const emp     = employeeList.find(e => e.id.toString() === id.toString());
         const empName = emp ? emp.name : id;
-        // FIX UX: Custom confirm
-        const ok = await showConfirm(`Mark Leave for ${empName} on ${date}?\n\nCurrent Balance: ${emp ? emp.leaveBal : '?'}\n\nDeducts 1 day from leave balance.`, { title:'Assign Leave', okLabel:'Mark Leave', danger:true, icon:'📅' });
+
+        // Count estimated working days client-side for the confirm message
+        let estDays = 0;
+        const cur = new Date(fDate);
+        while (cur <= tDate) { if (cur.getDay() !== 0) estDays++; cur.setDate(cur.getDate() + 1); }
+
+        const isSingle  = dateFrom === dateTo;
+        const rangeText = isSingle ? `on ${dateFrom}` : `from ${dateFrom} to ${dateTo} (~${estDays} working day${estDays !== 1 ? 's' : ''})`;
+
+        const ok = await showConfirm(
+            `Mark Leave for ${empName} ${rangeText}?\n\nCurrent Balance: ${emp ? emp.leaveBal : '?'}\n\nSundays and public holidays in the range are automatically skipped.`,
+            { title: 'Assign Leave', okLabel: 'Mark Leave', danger: true, icon: '📅' }
+        );
         if (!ok) return;
-        const res = await callGoogleAPI({ action: 'markLeaveAdmin', emplId: id, date, remarks: rem, user: currentUser.username });
+
+        showLoader('leave');
+        const res = await callGoogleAPI({
+            action:    'markLeaveAdmin',
+            emplId:    id,
+            dateFrom:  dateFrom,
+            dateTo:    dateTo,
+            remarks:   rem,
+            user:      currentUser.username
+        });
+        hideLoader();
+
         if (res.status === 'success') {
-            showToast('Leave Assigned');
-            document.getElementById('leave-remarks').value = '';
-            // FIX LOGIC: Update in-memory balance
-            if (emp) emp.leaveBal = Math.max(0, (emp.leaveBal || 1) - 1);
-        } else showToast(res.message, 'error');
+            const daysMarked = res.daysMarked || estDays;
+            showToast(`✅ Leave assigned — ${daysMarked} day${daysMarked !== 1 ? 's' : ''} marked`);
+            document.getElementById('leave-remarks').value    = '';
+            document.getElementById('leave-date-from').value  = '';
+            document.getElementById('leave-date-to').value    = '';
+            document.getElementById('leave-day-preview').style.display = 'none';
+            // Update in-memory balance by actual days deducted
+            if (emp) emp.leaveBal = Math.max(0, (emp.leaveBal || 0) - daysMarked);
+        } else {
+            showToast(res.message || 'Failed to assign leave.', 'error');
+        }
     }
 
     // FIX PERF: Use textContent instead of innerText — avoids forced layout reflow on every keyup
